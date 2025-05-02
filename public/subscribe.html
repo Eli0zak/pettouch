@@ -1,72 +1,191 @@
 <!DOCTYPE html>
-     <html lang="ar">
-     <head>
-       <meta charset="UTF-8">
-       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-       <title>PetTouch - تسجيل الدخول</title>
-       <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-     </head>
-     <body class="bg-gray-100 font-sans">
-       <header class="bg-purple-600 text-white py-4">
-         <div class="container mx-auto text-center">
-           <h1 class="text-2xl font-bold">تسجيل الدخول أو الاشتراك</h1>
-         </div>
-       </header>
-       <main class="container mx-auto py-12">
-         <form id="login-form" class="max-w-lg mx-auto bg-white p-6 rounded-lg shadow-md">
-           <div class="mb-4">
-             <label for="identifier" class="block text-gray-700">الإيميل أو رقم الهاتف</label>
-             <input id="identifier" type="text" required class="w-full p-2 border rounded">
-           </div>
-           <div class="mb-4">
-             <label for="password" class="block text-gray-700">كلمة المرور</label>
-             <input id="password" type="password" required class="w-full p-2 border rounded">
-           </div>
-           <button type="submit" class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">تسجيل الدخول</button>
-           <button type="button" id="signup-button" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 mt-2">إنشاء حساب</button>
-         </form>
-         <p id="error-message" class="text-red-500 text-center mt-4"></p>
-       </main>
-       <script type="module">
-         import { supabase } from '../utils/supabase.js';
+<html lang="ar" dir="rtl">
 
-         // تسجيل الدخول
-         document.getElementById('login-form').addEventListener('submit', async (e) => {
-           e.preventDefault();
-           const identifier = document.getElementById('identifier').value;
-           const password = document.getElementById('password').value;
-           const errorMessage = document.getElementById('error-message');
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الاشتراك أو تسجيل الدخول - PetTouch</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        .btn-primary {
+            background-color: #8B5CF6;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.375rem;
+            font-weight: 600;
+            transition: background-color 0.2s ease-in-out;
+        }
 
-           const isEmail = identifier.includes('@');
-           const loginData = isEmail ? { email: identifier, password } : { phone: identifier, password };
+        .btn-primary:hover {
+            background-color: #7C3AED;
+        }
 
-           const { data, error } = await supabase.auth.signInWithPassword(loginData);
+        .form-input {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #D1D5DB;
+            border-radius: 0.375rem;
+            margin-bottom: 0.75rem;
+        }
 
-           if (error) {
-             errorMessage.textContent = 'خطأ: ' + error.message;
-           } else {
-             alert('تم تسجيل الدخول بنجاح!');
-             window.location.href = '/user-dashboard.html';
-           }
-         });
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #374151;
+            font-weight: 500;
+        }
 
-         // إنشاء حساب
-         document.getElementById('signup-button').addEventListener('click', async () => {
-           const identifier = document.getElementById('identifier').value;
-           const password = document.getElementById('password').value;
-           const errorMessage = document.getElementById('error-message');
+        .error-message {
+            color: #EF4444;
+            margin-top: 0.5rem;
+        }
 
-           const isEmail = identifier.includes('@');
-           const signupData = isEmail ? { email: identifier, password } : { phone: identifier, password };
+        .card {
+            background-color: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+    </style>
+</head>
 
-           const { data, error } = await supabase.auth.signUp(signupData);
+<body class="bg-gray-50 min-h-screen flex items-center justify-center">
+    <div class="container mx-auto px-4">
+        <div class="max-w-md mx-auto card overflow-hidden p-8">
+            <div class="text-center mb-8">
+                <img src="img/logo.png" alt="PetTouch Logo" class="h-16 mx-auto">
+                <h1 class="text-2xl font-bold mt-4">الاشتراك أو تسجيل الدخول</h1>
+                <p class="text-gray-600">ابدأ في حماية حيوانك الأليف اليوم!</p>
+            </div>
 
-           if (error) {
-             errorMessage.textContent = 'خطأ: ' + error.message;
-           } else {
-             alert('تم إنشاء الحساب! تحقق من بريدك/هاتفك لتأكيد الحساب.');
-           }
-         });
-       </script>
-     </body>
-     </html>
+            <div id="auth-options" class="space-y-4 mb-6">
+                <button onclick="showLogin()" class="w-full btn btn-primary">تسجيل الدخول</button>
+                <button onclick="showSignup()" class="w-full btn btn-primary bg-green-500 hover:bg-green-600">اشتراك جديد
+                </button>
+            </div>
+
+            <form id="login-form" class="space-y-6 hidden">
+                <div>
+                    <label for="login-identifier" class="form-label">البريد الإلكتروني أو رقم الهاتف</label>
+                    <input type="text" id="login-identifier" name="login-identifier" class="form-input" required>
+                </div>
+                <div>
+                    <label for="login-password" class="form-label">كلمة المرور</label>
+                    <input type="password" id="login-password" name="login-password" class="form-input" required>
+                </div>
+                <div>
+                    <button type="submit" class="w-full btn btn-primary">تسجيل الدخول</button>
+                </div>
+                <p id="login-error-message" class="error-message"></p>
+                <div class="mt-4 text-center">
+                    <button type="button" onclick="showSignup()" class="text-sm text-purple-600 hover:text-purple-500">
+                        ليس لديك حساب؟ اشترك الآن
+                    </button>
+                </div>
+            </form>
+
+            <form id="signup-form" class="space-y-6 hidden">
+                <div>
+                    <label for="signup-email" class="form-label">البريد الإلكتروني</label>
+                    <input type="email" id="signup-email" name="signup-email" class="form-input" required>
+                </div>
+                <div>
+                    <label for="signup-phone" class="form-label">رقم الهاتف</label>
+                    <input type="tel" id="signup-phone" name="signup-phone" class="form-input">
+                </div>
+                <div>
+                    <label for="signup-password" class="form-label">كلمة المرور</label>
+                    <input type="password" id="signup-password" name="signup-password" class="form-input" required>
+                </div>
+                <div>
+                    <button type="submit" class="w-full btn btn-primary bg-green-500 hover:bg-green-600">اشترك</button>
+                </div>
+                <p id="signup-error-message" class="error-message"></p>
+                <div class="mt-4 text-center">
+                    <button type="button" onclick="showLogin()" class="text-sm text-purple-600 hover:text-purple-500">
+                        لديك حساب بالفعل؟ سجل الدخول
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const authOptionsDiv = document.getElementById('auth-options');
+        const loginForm = document.getElementById('login-form');
+        const signupForm = document.getElementById('signup-form');
+        const loginErrorMessage = document.getElementById('login-error-message');
+        const signupErrorMessage = document.getElementById('signup-error-message');
+
+        function showLogin() {
+            authOptionsDiv.classList.add('hidden');
+            signupForm.classList.add('hidden');
+            loginForm.classList.remove('hidden');
+        }
+
+        function showSignup() {
+            authOptionsDiv.classList.add('hidden');
+            loginForm.classList.add('hidden');
+            signupForm.classList.remove('hidden');
+        }
+
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const identifier = document.getElementById('login-identifier').value;
+            const password = document.getElementById('login-password').value;
+
+            const isEmail = identifier.includes('@');
+            const loginData = isEmail ? {
+                email: identifier,
+                password
+            } : {
+                phone: identifier,
+                password
+            };
+
+            const {
+                data,
+                error
+            } = await supabase.auth.signInWithPassword(loginData);
+
+            if (error) {
+                loginErrorMessage.textContent = `خطأ في تسجيل الدخول: ${error.message}`;
+            } else {
+                window.location.href = '/user-dashboard.html'; // Redirect to user dashboard
+            }
+        });
+
+        document.getElementById('signup-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('signup-email').value;
+            const phone = document.getElementById('signup-phone').value;
+            const password = document.getElementById('signup-password').value;
+
+            const {
+                data,
+                error
+            } = await supabase.auth.signUp({
+                email,
+                password,
+                phone,
+            });
+
+            if (error) {
+                signupErrorMessage.textContent = `خطأ في الاشتراك: ${error.message}`;
+            } else {
+                signupErrorMessage.textContent = 'تم إنشاء حسابك بنجاح! يرجى تسجيل الدخول.';
+                // Optionally redirect to login or show a success message
+                setTimeout(showLogin, 2000); // Redirect to login after 2 seconds
+            }
+        });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_URL = "YOUR_SUPABASE_URL";
+        const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    </script>
+</body>
+
+</html>

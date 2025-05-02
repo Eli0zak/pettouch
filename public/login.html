@@ -1,53 +1,138 @@
 <!DOCTYPE html>
-<html lang="ar">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="تسجيل الدخول إلى PetTouch لإدارة علامات NFC الخاصة بحيواناتك الأليفة">
-  <title>تسجيل الدخول - PetTouch</title>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css">
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
-  <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
-</head>
-<body class="bg-gray-100 font-sans flex items-center justify-center min-h-screen">
-  <div class="bg-white p-8 rounded-lg shadow-lg max-w-md w-full text-center">
-    <img src="img/logo.png" alt="PetTouch Logo" class="h-16 mx-auto mb-6">
-    <h1 class="text-2xl font-bold mb-4">تسجيل الدخول / إنشاء حساب</h1>
-    <p class="text-gray-600 mb-6">ادخل إلى حسابك لإدارة حيواناتك الأليفة</p>
-    <button onclick="netlifyIdentity.open()" class="bg-purple-600 text-white px-6 py-3 rounded-full hover:bg-purple-700 w-full">دخول</button>
-    <p class="mt-4">لست عضوًا؟ <a href="subscribe.html" class="text-purple-600 hover:underline">اشترك الآن</a></p>
-  </div>
+<html lang="ar" dir="rtl">
 
-  <script>
-    netlifyIdentity.init();
-    netlifyIdentity.on("init", user => {
-      if (user && user.email === "mo3tazaky@hotmail.com") {
-        window.location.href = "dashboard.html";
-      }
-    });
-    netlifyIdentity.on("login", user => {
-      Toastify({
-        text: "تم تسجيل الدخول بنجاح!",
-        duration: 3000,
-        gravity: "top",
-        position: "right",
-        backgroundColor: "#7c3aed",
-      }).showToast();
-      if (user.email === "mo3tazaky@hotmail.com") {
-        window.location.href = "dashboard.html";
-      } else {
-        Toastify({
-          text: "مرحبًا! لوحة تحكم المستخدم قيد التطوير.",
-          duration: 3000,
-          gravity: "top",
-          position: "right",
-          backgroundColor: "#7c3aed",
-        }).showToast();
-      }
-    });
-  </script>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تسجيل الدخول - PetTouch</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        .btn-primary {
+            background-color: #8B5CF6;
+            /* بنفسجي */
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.375rem;
+            font-weight: 600;
+            transition: background-color 0.2s ease-in-out;
+        }
+
+        .btn-primary:hover {
+            background-color: #7C3AED;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #D1D5DB;
+            border-radius: 0.375rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #374151;
+            font-weight: 500;
+        }
+
+        .error-message {
+            color: #EF4444;
+            margin-top: 0.5rem;
+        }
+
+        .card {
+            background-color: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 min-h-screen flex items-center justify-center">
+    <div class="container mx-auto px-4">
+        <div class="max-w-md mx-auto card overflow-hidden p-8">
+            <div class="text-center mb-8">
+                <img src="img/logo.png" alt="PetTouch Logo" class="h-16 mx-auto">
+                <h1 class="text-2xl font-bold mt-4">مرحباً بعودتك!</h1>
+                <p class="text-gray-600">سجل الدخول لإدارة حيواناتك الأليفة</p>
+            </div>
+
+            <form id="login-form" class="space-y-6">
+                <div>
+                    <label for="identifier" class="form-label">البريد الإلكتروني أو رقم الهاتف</label>
+                    <input type="text" id="identifier" name="identifier" class="form-input" required>
+                </div>
+
+                <div>
+                    <label for="password" class="form-label">كلمة المرور</label>
+                    <input type="password" id="password" name="password" class="form-input" required>
+                </div>
+
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <input id="remember-me" name="remember-me" type="checkbox"
+                            class="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded">
+                        <label for="remember-me" class="mr-2 block text-sm text-gray-700">تذكرني</label>
+                    </div>
+
+                    <div class="text-sm">
+                        <a href="#" class="font-medium text-purple-600 hover:text-purple-500">نسيت كلمة المرور؟</a>
+                    </div>
+                </div>
+
+                <div>
+                    <button type="submit" class="w-full btn btn-primary">تسجيل الدخول</button>
+                </div>
+                <p id="error-message" class="error-message"></p>
+            </form>
+
+            <div class="mt-6 text-center">
+                <p class="text-sm">
+                    ليس لديك حساب؟
+                    <a href="subscribe.html" class="font-medium text-purple-600 hover:text-purple-500">
+                        اشترك الآن
+                    </a>
+                </p>
+            </div>
+        </div>
+    </div>
+    <script>
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const identifier = document.getElementById('identifier').value;
+            const password = document.getElementById('password').value;
+            const errorMessage = document.getElementById('error-message');
+
+            const isEmail = identifier.includes('@');
+            const loginData = isEmail ? {
+                email: identifier,
+                password
+            } : {
+                phone: identifier,
+                password
+            };
+
+            const {
+                data,
+                error
+            } = await supabase.auth.signInWithPassword(loginData);
+
+            if (error) {
+                errorMessage.textContent = `خطأ: ${error.message}`;
+            } else {
+                window.location.href = '/user-dashboard.html'; // Redirect to user dashboard
+            }
+        });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_URL = "YOUR_SUPABASE_URL";
+        const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    </script>
 </body>
+
 </html>
