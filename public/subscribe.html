@@ -1,126 +1,72 @@
 <!DOCTYPE html>
-<html lang="ar">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="اشترك في PetTouch للحصول على علامات NFC لحيواناتك الأليفة">
-  <title>الاشتراك - PetTouch</title>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css">
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
-  <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
-</head>
-<body class="bg-gray-100 font-sans">
-  <header class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-4 shadow-lg">
-    <div class="container mx-auto flex justify-between items-center px-4">
-      <div class="flex items-center">
-        <img src="img/logo.png" alt="PetTouch Logo" class="h-12 mr-3">
-        <h1 class="text-2xl font-bold">PetTouch</h1>
-      </div>
-      <nav class="flex space-x-4 space-x-reverse">
-        <a href="index.html" class="hover:text-gray-200">الرئيسية</a>
-        <a href="report.html" class="hover:text-gray-200">التبليغ</a>
-        <a href="#" id="loginBtn" class="hover:text-gray-200">تسجيل الدخول</a>
-      </nav>
-    </div>
-  </header>
+     <html lang="ar">
+     <head>
+       <meta charset="UTF-8">
+       <meta name="viewport" content="width=device-width, initial-scale=1.0">
+       <title>PetTouch - تسجيل الدخول</title>
+       <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+     </head>
+     <body class="bg-gray-100 font-sans">
+       <header class="bg-purple-600 text-white py-4">
+         <div class="container mx-auto text-center">
+           <h1 class="text-2xl font-bold">تسجيل الدخول أو الاشتراك</h1>
+         </div>
+       </header>
+       <main class="container mx-auto py-12">
+         <form id="login-form" class="max-w-lg mx-auto bg-white p-6 rounded-lg shadow-md">
+           <div class="mb-4">
+             <label for="identifier" class="block text-gray-700">الإيميل أو رقم الهاتف</label>
+             <input id="identifier" type="text" required class="w-full p-2 border rounded">
+           </div>
+           <div class="mb-4">
+             <label for="password" class="block text-gray-700">كلمة المرور</label>
+             <input id="password" type="password" required class="w-full p-2 border rounded">
+           </div>
+           <button type="submit" class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">تسجيل الدخول</button>
+           <button type="button" id="signup-button" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 mt-2">إنشاء حساب</button>
+         </form>
+         <p id="error-message" class="text-red-500 text-center mt-4"></p>
+       </main>
+       <script type="module">
+         import { supabase } from '../utils/supabase.js';
 
-  <main class="container mx-auto py-12">
-    <section class="text-center mb-12">
-      <h2 class="text-3xl font-bold mb-4">اختر خطتك المفضلة</h2>
-      <p class="text-lg text-gray-600">انضم إلى PetTouch اليوم واحمِ حيواناتك الأليفة بعلامات NFC الذكية. بعد اختيار الباقة، يرجى التواصل معنا لإتمام عملية الدفع.</p>
-    </section>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-      <div class="bg-white p-6 rounded-lg shadow-md text-center">
-        <h3 class="text-xl font-semibold mb-2">الباقة الأساسية</h3>
-        <p class="text-2xl font-bold mb-4">50 دولار/سنة</p>
-        <ul class="text-right mb-4 space-y-2">
-          <li>علامة NFC واحدة</li>
-          <li>ملف حيوان أساسي</li>
-          <li>دعم عبر البريد الإلكتروني</li>
-        </ul>
-        <button onclick="subscribe('basic')" class="bg-purple-600 text-white px-4 py-2 rounded-full hover:bg-purple-700">اختر الباقة</button>
-      </div>
-      <div class="bg-white p-6 rounded-lg shadow-md text-center">
-        <h3 class="text-xl font-semibold mb-2">الباقة المميزة</h3>
-        <p class="text-2xl font-bold mb-4">80 دولار/سنة</p>
-        <ul class="text-right mb-4 space-y-2">
-          <li>علامتين NFC</li>
-          <li>ملف حيوان متقدم</li>
-          <li>دعم عبر الهاتف</li>
-        </ul>
-        <button onclick="subscribe('premium')" class="bg-purple-600 text-white px-4 py-2 rounded-full hover:bg-purple-700">اختر الباقة</button>
-      </div>
-      <div class="bg-white p-6 rounded-lg shadow-md text-center">
-        <h3 class="text-xl font-semibold mb-2">الباقة العائلية</h3>
-        <p class="text-2xl font-bold mb-4">120 دولار/سنة</p>
-        <ul class="text-right mb-4 space-y-2">
-          <li>4 علامات NFC</li>
-          <li>ملفات حيوانات متعددة</li>
-          <li>دعم أولوية 24/7</li>
-        </ul>
-        <button onclick="subscribe('family')" class="bg-purple-600 text-white px-4 py-2 rounded-full hover:bg-purple-700">اختر الباقة</button>
-      </div>
-    </div>
-  </main>
+         // تسجيل الدخول
+         document.getElementById('login-form').addEventListener('submit', async (e) => {
+           e.preventDefault();
+           const identifier = document.getElementById('identifier').value;
+           const password = document.getElementById('password').value;
+           const errorMessage = document.getElementById('error-message');
 
-  <footer class="bg-gray-800 text-white py-6">
-    <div class="container mx-auto text-center">
-      <p>© 2025 PetTouch. جميع الحقوق محفوظة.</p>
-    </div>
-  </footer>
+           const isEmail = identifier.includes('@');
+           const loginData = isEmail ? { email: identifier, password } : { phone: identifier, password };
 
-  <script>
-    netlifyIdentity.init();
-    document.getElementById('loginBtn').addEventListener('click', () => netlifyIdentity.open());
+           const { data, error } = await supabase.auth.signInWithPassword(loginData);
 
-    async function subscribe(plan) {
-      try {
-        const user = netlifyIdentity.currentUser();
-        if (!user) {
-          netlifyIdentity.open();
-          return;
-        }
+           if (error) {
+             errorMessage.textContent = 'خطأ: ' + error.message;
+           } else {
+             alert('تم تسجيل الدخول بنجاح!');
+             window.location.href = '/user-dashboard.html';
+           }
+         });
 
-        const response = await fetch('/.netlify/functions/create-subscription', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ plan, userId: user.id })
-        });
-        const result = await response.json();
-        if (response.ok) {
-          Toastify({
-            text: "تم طلب الاشتراك بنجاح! سيتم تفعيله بعد تأكيد الدفع.",
-            duration: 3000,
-            gravity: "top",
-            position: "right",
-            backgroundColor: "#7c3aed",
-          }).showToast();
-        } else {
-          throw new Error(result.error);
-        }
-      } catch (error) {
-        Toastify({
-          text: "حدث خطأ أثناء طلب الاشتراك!",
-          duration: 3000,
-          gravity: "top",
-          position: "right",
-          backgroundColor: "#e11d48",
-        }).showToast();
-      }
-    }
+         // إنشاء حساب
+         document.getElementById('signup-button').addEventListener('click', async () => {
+           const identifier = document.getElementById('identifier').value;
+           const password = document.getElementById('password').value;
+           const errorMessage = document.getElementById('error-message');
 
-    netlifyIdentity.on('login', () => {
-      Toastify({
-        text: "تم تسجيل الدخول بنجاح!",
-        duration: 3000,
-        gravity: "top",
-        position: "right",
-        backgroundColor: "#7c3aed",
-      }).showToast();
-    });
-  </script>
-</body>
-</html>
+           const isEmail = identifier.includes('@');
+           const signupData = isEmail ? { email: identifier, password } : { phone: identifier, password };
+
+           const { data, error } = await supabase.auth.signUp(signupData);
+
+           if (error) {
+             errorMessage.textContent = 'خطأ: ' + error.message;
+           } else {
+             alert('تم إنشاء الحساب! تحقق من بريدك/هاتفك لتأكيد الحساب.');
+           }
+         });
+       </script>
+     </body>
+     </html>
