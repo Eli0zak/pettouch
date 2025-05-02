@@ -123,55 +123,75 @@
         const signupErrorMessage = document.getElementById('signup-error-message');
 
         function showLogin() {
+            console.log("Show login form clicked");
             authOptionsDiv.classList.add('hidden');
             signupForm.classList.add('hidden');
             loginForm.classList.remove('hidden');
         }
 
         function showSignup() {
+            console.log("Show signup form clicked");
             authOptionsDiv.classList.add('hidden');
             loginForm.classList.add('hidden');
             signupForm.classList.remove('hidden');
         }
 
-        document.getElementById('login-form').addEventListener('submit', async (e) => {
+        loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            console.log("Login form submitted");
             const identifier = document.getElementById('login-identifier').value;
             const password = document.getElementById('login-password').value;
 
-            const loginData = { email: identifier, password };
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: identifier,
+                    password
+                });
 
-            const { data, error } = await supabase.auth.signInWithPassword(loginData);
-
-            if (error) {
-                loginErrorMessage.textContent = `خطأ في تسجيل الدخول: ${error.message}`;
-            } else {
-                window.location.href = '/user-dashboard.html'; // Redirect to user dashboard
+                if (error) {
+                    console.error("Login error:", error);
+                    loginErrorMessage.textContent = `خطأ في تسجيل الدخول: ${error.message}`;
+                } else {
+                    console.log("Login successful:", data);
+                    window.location.href = '/user-dashboard.html';
+                }
+            } catch (error) {
+                console.error("Unexpected login error:", error);
+                loginErrorMessage.textContent = `خطأ غير متوقع: ${error.message}`;
             }
         });
 
-        document.getElementById('signup-form').addEventListener('submit', async (e) => {
+        signupForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            console.log("Signup form submitted");
             const email = document.getElementById('signup-email').value;
             const phone = document.getElementById('signup-phone').value;
             const password = document.getElementById('signup-password').value;
 
-            const { data, error } = await supabase.auth.signUp({
-                email,
-                password,
-                options: { data: { phone } }
-            });
+            try {
+                const { data, error } = await supabase.auth.signUp({
+                    email,
+                    password,
+                    options: { data: { phone } }
+                });
 
-            if (error) {
-                signupErrorMessage.textContent = `خطأ في الاشتراك: ${error.message}`;
-            } else if (data.user) {
-                signupErrorMessage.textContent = 'تم إنشاء حسابك بنجاح! تحقق من بريدك لتفعيله.';
-                setTimeout(() => {
-                    window.location.href = '/user-dashboard.html';
-                }, 2000);
-            } else {
-                signupErrorMessage.textContent = 'تم إنشاء الحساب! تحقق من بريدك لتفعيله.';
-                setTimeout(showLogin, 2000);
+                if (error) {
+                    console.error("Signup error:", error);
+                    signupErrorMessage.textContent = `خطأ في الاشتراك: ${error.message}`;
+                } else if (data.user) {
+                    console.log("Signup successful:", data);
+                    signupErrorMessage.textContent = 'تم إنشاء حسابك بنجاح! تحقق من بريدك لتفعيله.';
+                    setTimeout(() => {
+                        window.location.href = '/user-dashboard.html';
+                    }, 2000);
+                } else {
+                    console.log("Signup pending confirmation:", data);
+                    signupErrorMessage.textContent = 'تم إنشاء الحساب! تحقق من بريدك لتفعيله.';
+                    setTimeout(showLogin, 2000);
+                }
+            } catch (error) {
+                console.error("Unexpected signup error:", error);
+                signupErrorMessage.textContent = `خطأ غير متوقع: ${error.message}`;
             }
         });
     </script>
