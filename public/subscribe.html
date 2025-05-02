@@ -112,29 +112,31 @@
         </div>
     </div>
 
-    <script type="module">
-        // استيراد Supabase من الملف المركزي
-        import { supabase } from '/utils/supabase.js';
-
-        const authOptionsDiv = document.getElementById('auth-options');
-        const loginForm = document.getElementById('login-form');
-        const signupForm = document.getElementById('signup-form');
-        const loginErrorMessage = document.getElementById('login-error-message');
-        const signupErrorMessage = document.getElementById('signup-error-message');
-
+    <script>
+        // تعريف الدوال في الـ global scope
         function showLogin() {
             console.log("Show login form clicked");
-            authOptionsDiv.classList.add('hidden');
-            signupForm.classList.add('hidden');
-            loginForm.classList.remove('hidden');
+            document.getElementById('auth-options').classList.add('hidden');
+            document.getElementById('signup-form').classList.add('hidden');
+            document.getElementById('login-form').classList.remove('hidden');
         }
 
         function showSignup() {
             console.log("Show signup form clicked");
-            authOptionsDiv.classList.add('hidden');
-            loginForm.classList.add('hidden');
-            signupForm.classList.remove('hidden');
+            document.getElementById('auth-options').classList.add('hidden');
+            document.getElementById('login-form').classList.add('hidden');
+            document.getElementById('signup-form').classList.remove('hidden');
         }
+    </script>
+
+    <script type="module">
+        // استيراد Supabase من الملف المركزي
+        import { supabase } from '/utils/supabase.js';
+
+        const loginForm = document.getElementById('login-form');
+        const signupForm = document.getElementById('signup-form');
+        const loginErrorMessage = document.getElementById('login-error-message');
+        const signupErrorMessage = document.getElementById('signup-error-message');
 
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
