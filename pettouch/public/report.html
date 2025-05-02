@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="التبليغ عن حيوان أليف مفقود باستخدام علامة NFC">
+  <title>التبليغ عن حيوان - PetTouch</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+</head>
+<body class="bg-gray-100 font-sans">
+  <header class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-4 shadow-lg">
+    <div class="container mx-auto flex justify-between items-center px-4">
+      <div class="flex items-center">
+        <img src="img/logo.png" alt="PetTouch Logo" class="h-12 mr-3">
+        <h1 class="text-2xl font-bold">PetTouch</h1>
+      </div>
+      <nav class="flex space-x-4 space-x-reverse">
+        <a href="index.html" class="hover:text-gray-200">الرئيسية</a>
+        <a href="subscribe.html" class="hover:text-gray-200">الاشتراك</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container mx-auto py-12">
+    <section class="bg-white p-6 rounded-lg shadow-md">
+      <h2 class="text-2xl font-bold mb-6 text-center">التبليغ عن حيوان مفقود</h2>
+      <form id="reportForm" class="space-y-4">
+        <div>
+          <label for="nfcId" class="block text-sm font-medium text-gray-700">رقم علامة NFC</label>
+          <input type="text" id="nfcId" name="nfcId" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500" required>
+        </div>
+        <div>
+          <label for="details" class="block text-sm font-medium text-gray-700">تفاصيل التقرير</label>
+          <textarea id="details" name="details" rows="4" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500"></textarea>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">الموقع</label>
+          <div id="map" class="h-64 w-full rounded-md"></div>
+        </div>
+        <button type="submit" class="w-full bg-purple-600 text-white px-4 py-2 rounded-full hover:bg-purple-700">إرسال التقرير</button>
+      </form>
+    </section>
+  </main>
+
+  <footer class="bg-gray-800 text-white py-6">
+    <div class="container mx-auto text-center">
+      <p>© 2025 PetTouch. جميع الحقوق محفوظة.</p>
+    </div>
+  </footer>
+
+  <script>
+    let map, marker;
+
+    function initMap() {
+      map = L.map('map').setView([30.0444, 31.2357], 13);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+      }).addTo(map);
+      map.on('click', function (e) {
+        if (marker) map.removeLayer(marker);
+        marker = L.marker([e.latlng.lat, e.latlng.lng]).addTo(map);
+      });
+    }
+
+    document.getElementById('reportForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      try {
+        const nfcId = document.getElementById('nfcId').value;
+        const details = document.getElementById('details').value;
+        const location = marker ? { lat: marker.getLatLng().lat, lng: marker.getLatLng().lng } : null;
+
+        if (!location) {
+          Toastify({
+            text: "يرجى تحديد موقع على الخريطة!",
+            duration: 3000,
+            gravity: "top",
+            position: "right",
+            backgroundColor: "#e11d48",
+          }).showToast();
+          return;
+        }
+
+        const response = await fetch('/.netlify/functions/submit-report', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nfcId, details, location })
+        });
+        const result = await response.json();
+        if (response.ok) {
+          Toastify({
+            text: "تم إرسال التقرير بنجاح!",
+            duration: 3000,
+            gravity: "top",
+            position: "right",
+            backgroundColor: "#7c3aed",
+          }).showToast();
+          document.getElementById('reportForm').reset();
+          if (marker) map.removeLayer(marker);
+        } else {
+          throw new Error(result.error);
+        }
+      } catch (error) {
+        Toastify({
+          text: "حدث خطأ أثناء إرسال التقرير!",
+          duration: 3000,
+          gravity: "top",
+          position: "right",
+          backgroundColor: "#e11d48",
+        }).showToast();
+      }
+    });
+
+    initMap();
+  </script>
+</body>
+</html>

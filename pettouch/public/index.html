@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PetTouch - علامات NFC الذكيه لحيواناتك الأليفة</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
+  <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+</head>
+<body class="bg-gray-100 font-sans">
+  <header class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-4 shadow-lg">
+    <div class="container mx-auto flex justify-between items-center px-4">
+      <div class="flex items-center">
+        <img src="img/logo.png" alt="PetTouch Logo" class="h-12 mr-3">
+        <h1 class="text-2xl font-bold">PetTouch</h1>
+      </div>
+      <nav class="flex space-x-4 space-x-reverse">
+        <a href="subscribe.html" class="hover:text-gray-200">الاشتراك</a>
+        <a href="report.html" class="hover:text-gray-200">التبليغ عن حيوان</a>
+        <a href="#" id="loginBtn" class="hover:text-gray-200">تسجيل الدخول</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <!-- Hero Section -->
+    <section class="relative bg-cover bg-center h-96" style="background-image: url('img/hero-bg.jpg');">
+      <div class="absolute inset-0 bg-black opacity-50"></div>
+      <div class="container mx-auto h-full flex items-center justify-center text-center text-white relative z-10">
+        <div>
+          <h2 class="text-4xl font-bold mb-4">حافظ على أمان حيوانك الأليف مع PetTouch</h2>
+          <p class="text-lg mb-6">علامات NFC ذكية تحمل بيانات حيوانك وتتيح التواصل معك بسهولة.</p>
+          <a href="subscribe.html" class="bg-purple-600 text-white px-6 py-3 rounded-full hover:bg-purple-700">اطلب الآن</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="container mx-auto py-12">
+      <h3 class="text-3xl font-bold text-center mb-8">لماذا تختار PetTouch؟</h3>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div class="bg-white p-6 rounded-lg shadow-md text-center">
+          <img src="img/pet001.jpg" alt="Waterproof Tag" class="h-32 mx-auto mb-4 rounded-full">
+          <h4 class="text-xl font-semibold mb-2">علامة مقاومة للماء</h4>
+          <p>علاماتنا متينة وتتحمل الظروف الجوية القاسية.</p>
+        </div>
+        <div class="bg-white p-6 rounded-lg shadow-md text-center">
+          <img src="img/pet002.jpg" alt="Pet Profile" class="h-32 mx-auto mb-4 rounded-full">
+          <h4 class="text-xl font-semibold mb-2">ملف مخصص لكل حيوان</h4>
+          <p>صفحة خاصة تحتوي على كل تفاصيل حيوانك الأليف.</p>
+        </div>
+        <div class="bg-white p-6 rounded-lg shadow-md text-center">
+          <img src="img/hero-bg.jpg" alt="Location Sharing" class="h-32 mx-auto mb-4 rounded-full">
+          <h4 class="text-xl font-semibold mb-2">مشاركة الموقع</h4>
+          <p>إرسال موقع الحيوان فور العثور عليه بسهولة.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Subscriptions Section -->
+    <section class="bg-gray-200 py-12">
+      <div class="container mx-auto text-center">
+        <h3 class="text-3xl font-bold mb-8">اختر خطتك المفضلة</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div class="bg-white p-6 rounded-lg shadow-md">
+            <h4 class="text-xl font-semibold mb-2">الباقة الأساسية</h4>
+            <p class="text-2xl font-bold mb-4">50 دولار/سنة</p>
+            <ul class="text-right mb-4">
+              <li>علامة NFC واحدة</li>
+              <li>ملف حيوان أساسي</li>
+              <li>دعم عبر البريد الإلكتروني</li>
+            </ul>
+            <a href="subscribe.html" class="bg-purple-600 text-white px-4 py-2 rounded-full hover:bg-purple-700">اشترك الآن</a>
+          </div>
+          <div class="bg-white p-6 rounded-lg shadow-md">
+            <h4 class="text-xl font-semibold mb-2">الباقة المميزة</h4>
+            <p class="text-2xl font-bold mb-4">80 دولار/سنة</p>
+            <ul class="text-right mb-4">
+              <li>علامتين NFC</li>
+              <li>ملف حيوان متقدم</li>
+              <li>دعم عبر الهاتف</li>
+            </ul>
+            <a href="subscribe.html" class="bg-purple-600 text-white px-4 py-2 rounded-full hover:bg-purple-700">اشترك الآن</a>
+          </div>
+          <div class="bg-white p-6 rounded-lg shadow-md">
+            <h4 class="text-xl font-semibold mb-2">الباقة العائلية</h4>
+            <p class="text-2xl font-bold mb-4">120 دولار/سنة</p>
+            <ul class="text-right mb-4">
+              <li>4 علامات NFC</li>
+              <li>ملفات حيوانات متعددة</li>
+              <li>دعم أولوية 24/7</li>
+            </ul>
+            <a href="subscribe.html" class="bg-purple-600 text-white px-4 py-2 rounded-full hover:bg-purple-700">اشترك الآن</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section class="container mx-auto py-12 text-center">
+      <h3 class="text-3xl font-bold mb-8">تواصل معنا</h3>
+      <p class="text-lg mb-4">لأي استفسارات، تواصلوا معنا عبر البريد الإلكتروني أو الهاتف.</p>
+      <p class="mb-4">البريد: <a href="mailto:info@pettouch.com" class="text-purple-600">info@pettouch.com</a></p>
+      <p>الهاتف: <a href="tel:+1234567890" class="text-purple-600">+1234567890</a></p>
+    </section>
+  </main>
+
+  <footer class="bg-gray-800 text-white py-6">
+    <div class="container mx-auto text-center">
+      <p>&copy; 2025 PetTouch. جميع الحقوق محفوظة.</p>
+    </div>
+  </footer>
+
+  <script>
+    netlifyIdentity.init();
+    document.getElementById("loginBtn").addEventListener("click", () => netlifyIdentity.open());
+    netlifyIdentity.on("login", user => {
+      if (user.email === "mo3tazaky@hotmail.com") {
+        window.location.href = "dashboard.html";
+      } else {
+        alert("مرحبًا! حسابك نشط، ولوحة تحكم المستخدم قيد التطوير.");
+      }
+    });
+  </script>
+</body>
+</html>

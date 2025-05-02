@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="لوحة تحكم الأدمن لإدارة علامات NFC وحيوانات PetTouch">
+  <title>لوحة تحكم الأدمن - PetTouch</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
+  <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+</head>
+<body class="bg-gray-100 font-sans">
+  <header class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-4 shadow-lg">
+    <div class="container mx-auto flex justify-between items-center px-4">
+      <div class="flex items-center">
+        <img src="img/logo.png" alt="PetTouch Logo" class="h-12 mr-3">
+        <h1 class="text-2xl font-bold">لوحة تحكم الأدمن</h1>
+      </div>
+      <button onclick="netlifyIdentity.logout()" class="bg-red-500 text-white px-4 py-2 rounded-full hover:bg-red-600">تسجيل الخروج</button>
+    </div>
+  </header>
+
+  <main class="container mx-auto py-12">
+    <section class="bg-white p-6 rounded-lg shadow-md mb-8">
+      <h2 class="text-2xl font-bold mb-6">إدارة الموقع</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <a href="subscribe.html" class="bg-purple-100 p-4 rounded-lg text-center hover:bg-purple-200">
+          <h3 class="text-lg font-semibold">صفحة الاشتراك</h3>
+          <p>إدارة خطط الاشتراك والعروض</p>
+        </a>
+        <a href="report.html" class="bg-purple-100 p-4 rounded-lg text-center hover:bg-purple-200">
+          <h3 class="text-lg font-semibold">التبليغ عن حيوان</h3>
+          <p>عرض التقارير المقدمة</p>
+        </a>
+      </div>
+    </section>
+    <section class="bg-white p-6 rounded-lg shadow-md mb-8">
+      <h2 class="text-2xl font-bold mb-6">إدارة الاشتراكات</h2>
+      <div id="subscriptionsList" class="space-y-4"></div>
+    </section>
+    <section class="bg-white p-6 rounded-lg shadow-md">
+      <h2 class="text-2xl font-bold mb-6">التقارير الأخيرة</h2>
+      <div id="reportsList" class="space-y-4"></div>
+    </section>
+  </main>
+
+  <script>
+    netlifyIdentity.init();
+    netlifyIdentity.on("init", user => {
+      if (!user || user.email !== "mo3tazaky@hotmail.com") {
+        window.location.href = "login.html";
+      } else {
+        loadReports();
+        loadSubscriptions();
+      }
+    });
+    netlifyIdentity.on("logout", () => {
+      Toastify({
+        text: "تم تسجيل الخروج بنجاح!",
+        duration: 3000,
+        gravity: "top",
+        position: "right",
+        backgroundColor: "#7c3aed",
+      }).showToast();
+      window.location.href = "index.html";
+    });
+
+    async function loadReports() {
+      try {
+        const response = await fetch('/.netlify/functions/get-reports', {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        const reports = await response.json();
+        const reportsList = document.getElementById('reportsList');
+        reports.forEach(report => {
+          const div = document.createElement('div');
+          div.className = 'p-4 bg-gray-100 rounded-lg';
+          div.innerHTML = `
+            <p><strong>رقم NFC:</strong> ${report.nfc_id}</p>
+            <p><strong>التفاصيل:</strong> ${report.details}</p>
+            <p><strong>الموقع:</strong> ${report.location.lat}, ${report.location.lng}</p>
+            <p><strong>التاريخ:</strong> ${new Date(report.created_at).toLocaleString()}</p>
+          `;
+          reportsList.appendChild(div);
+        });
+      } catch (error) {
+        Toastify({
+          text: "حدث خطأ أثناء تحميل التقارير!",
+          duration: 3000,
+          gravity: "top",
+          position: "right",
+          backgroundColor: "#e11d48",
+        }).showToast();
+      }
+    }
+
+    async function loadSubscriptions() {
+      try {
+        const response = await fetch('/.netlify/functions/manage-subscriptions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'get' })
+        });
+        const subscriptions = await response.json();
+        const subscriptionsList = document.getElementById('subscriptionsList');
+        subscriptions.forEach(sub => {
+          const div = document.createElement('div');
+          div.className = 'p-4 bg-gray-100 rounded-lg flex justify-between items-center';
+          div.innerHTML = `
+            <div>
+              <p><strong>معرف المستخدم:</strong> ${sub.user_id}</p>
+              <p><strong>الباقة:</strong> ${sub.plan}</p>
+              <p><strong>الحالة:</strong> ${sub.status}</p>
+              <p><strong>تاريخ البدء:</strong> ${new Date(sub.start_date).toLocaleString()}</p>
+              <p><strong>تاريخ الانتهاء:</strong> ${new Date(sub.end_date).toLocaleString()}</p>
+            </div>
+            <div>
+              <button onclick="updateSubscription('${sub.user_id}', 'active')" class="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 mr-2">تفعيل</button>
+              <button onclick="updateSubscription('${sub.user_id}', 'canceled')" class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600">إلغاء</button>
+            </div>
+          `;
+          subscriptionsList.appendChild(div);
+        });
+      } catch (error) {
+        Toastify({
+          text: "حدث خطأ أثناء تحميل الاشتراكات!",
+          duration: 3000,
+          gravity: "top",
+          position: "right",
+          backgroundColor: "#e11d48",
+        }).showToast();
+      }
+    }
+
+    async function updateSubscription(userId, status) {
+      try {
+        const response = await fetch('/.netlify/functions/manage-subscriptions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'update', userId, status })
+        });
+        const result = await response.json();
+        if (response.ok) {
+          Toastify({
+            text: `تم ${status === 'active' ? 'تفعيل' : 'إلغاء'} الاشتراك بنجاح!`,
+            duration: 3000,
+            gravity: "top",
+            position: "right",
+            backgroundColor: "#7c3aed",
+          }).showToast();
+          location.reload();
+        } else {
+          throw new Error(result.error);
+        }
+      } catch (error) {
+        Toastify({
+          text: "حدث خطأ أثناء تحديث الاشتراك!",
+          duration: 3000,
+          gravity: "top",
+          position: "right",
+          backgroundColor: "#e11d48",
+        }).showToast();
+      }
+    }
+  </script>
+</body>
+</html>
