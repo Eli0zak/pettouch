@@ -8,6 +8,7 @@
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <script type="module" src="/utils/supabase.js"></script>
     <style>
         .btn-primary {
             background-color: #8B5CF6;
@@ -67,8 +68,8 @@
 
             <form id="login-form" class="space-y-6 hidden">
                 <div>
-                    <label for="login-identifier" class="form-label">البريد الإلكتروني أو رقم الهاتف</label>
-                    <input type="text" id="login-identifier" name="login-identifier" class="form-input" required>
+                    <label for="login-identifier" class="form-label">البريد الإلكتروني</label>
+                    <input type="email" id="login-identifier" name="login-identifier" class="form-input" required>
                 </div>
                 <div>
                     <label for="login-password" class="form-label">كلمة المرور</label>
@@ -111,7 +112,10 @@
         </div>
     </div>
 
-    <script>
+    <script type="module">
+        // استيراد Supabase من الملف المركزي
+        import { supabase } from '/utils/supabase.js';
+
         const authOptionsDiv = document.getElementById('auth-options');
         const loginForm = document.getElementById('login-form');
         const signupForm = document.getElementById('signup-form');
@@ -135,19 +139,9 @@
             const identifier = document.getElementById('login-identifier').value;
             const password = document.getElementById('login-password').value;
 
-            const isEmail = identifier.includes('@');
-            const loginData = isEmail ? {
-                email: identifier,
-                password
-            } : {
-                phone: identifier,
-                password
-            };
+            const loginData = { email: identifier, password };
 
-            const {
-                data,
-                error
-            } = await supabase.auth.signInWithPassword(loginData);
+            const { data, error } = await supabase.auth.signInWithPassword(loginData);
 
             if (error) {
                 loginErrorMessage.textContent = `خطأ في تسجيل الدخول: ${error.message}`;
@@ -162,29 +156,24 @@
             const phone = document.getElementById('signup-phone').value;
             const password = document.getElementById('signup-password').value;
 
-            const {
-                data,
-                error
-            } = await supabase.auth.signUp({
+            const { data, error } = await supabase.auth.signUp({
                 email,
                 password,
-                phone,
+                options: { data: { phone } }
             });
 
             if (error) {
                 signupErrorMessage.textContent = `خطأ في الاشتراك: ${error.message}`;
+            } else if (data.user) {
+                signupErrorMessage.textContent = 'تم إنشاء حسابك بنجاح! تحقق من بريدك لتفعيله.';
+                setTimeout(() => {
+                    window.location.href = '/user-dashboard.html';
+                }, 2000);
             } else {
-                signupErrorMessage.textContent = 'تم إنشاء حسابك بنجاح! يرجى تسجيل الدخول.';
-                // Optionally redirect to login or show a success message
-                setTimeout(showLogin, 2000); // Redirect to login after 2 seconds
+                signupErrorMessage.textContent = 'تم إنشاء الحساب! تحقق من بريدك لتفعيله.';
+                setTimeout(showLogin, 2000);
             }
         });
-    </script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script>
-        const SUPABASE_URL = "https://etlzuamrufdhslnjicxi.supabase.co";
-        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV0bHp1YW1ydWZkaHNsbmppY3hpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYxNDQwNTUsImV4cCI6MjA2MTcyMDA1NX0.IaAz5dpS6ImvZHBL43lywa43aDmcxYbeWlsQ9T-Fj2E";
-        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     </script>
 </body>
 

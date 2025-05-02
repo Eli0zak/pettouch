@@ -11,6 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <script type="module" src="/utils/supabase.js"></script>
     <style>
         .pet-details-container {
             max-width: 600px;
@@ -151,9 +152,7 @@
     </script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        const SUPABASE_URL = "YOUR_SUPABASE_URL";
-        const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
-        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    import { supabase } from '/utils/supabase.js';
     </script>
 </body>
 

@@ -9,8 +9,8 @@
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
-    <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <script type="module" src="/utils/supabase.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     <style>
         .admin-card {
@@ -145,7 +145,10 @@
         </div>
     </footer>
 
-    <script>
+    <script type="module">
+        // استيراد Supabase من الملف المركزي
+        import { supabase } from '/utils/supabase.js';
+
         async function fetchUsers() {
             try {
                 const response = await fetch('/.netlify/functions/get-users');
@@ -157,7 +160,7 @@
                     row.innerHTML = `
             <td>${user.user_metadata.full_name || 'غير معروف'}</td>
             <td>${user.email || 'غير معروف'}</td>
-            <td>${user.phone || 'غير معروف'}</td>
+            <td>${user.user_metadata.phone || 'غير معروف'}</td>
             <td>${user.created_at}</td>
             <td>
               <button class="action-button">تعديل</button>
@@ -352,32 +355,32 @@
             }
         }
 
-        function logout() {
-            netlifyIdentity.logout();
+        async function logout() {
+            try {
+                await supabase.auth.signOut();
+                window.location.href = '/';
+            } catch (error) {
+                console.error('Error logging out:', error);
+                Toastify({
+                    text: "حدث خطأ أثناء تسجيل الخروج!",
+                    duration: 3000,
+                    gravity: "top",
+                    position: "right",
+                    backgroundColor: "#e11d48",
+                }).showToast();
+            }
         }
 
-        window.onload = () => {
-            netlifyIdentity.on('init', user => {
-                if (!user) {
-                    netlifyIdentity.on('login', () => {
-                        window.location.href = "/";
-                    });
-                }
-            });
-            netlifyIdentity.on('logout', () => {
-                window.location.href = "/";
-            });
-
-            fetchUsers();
-            fetchSubscriptions();
-            fetchPets();
+        window.onload = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                window.location.href = '/';
+            } else {
+                fetchUsers();
+                fetchSubscriptions();
+                fetchPets();
+            }
         };
-    </script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script>
-        const SUPABASE_URL = "YOUR_SUPABASE_URL";
-        const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
-        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     </script>
 </body>
 

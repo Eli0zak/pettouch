@@ -5,9 +5,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>تسجيل الدخول - PetTouch</title>
+    
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
+    <script type="module" src="/utils/supabase.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    
     <style>
         .btn-primary {
             background-color: #8B5CF6;
@@ -84,7 +87,7 @@
                 </div>
 
                 <div>
-                    <button type="submit" class="w-full btn btn-primary">تسجيل الدخول</button>
+                    <button type="submit" class="w-full btn-primary">تسجيل الدخول</button>
                 </div>
                 <p id="error-message" class="error-message"></p>
             </form>
@@ -99,39 +102,40 @@
             </div>
         </div>
     </div>
-    <script>
+
+    <script type="module">
+        // استيراد Supabase من الملف المركزي
+        import { supabase } from '/utils/supabase.js';
+
         document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const identifier = document.getElementById('identifier').value;
             const password = document.getElementById('password').value;
             const errorMessage = document.getElementById('error-message');
 
+            // التحقق إذا كان الـ identifier بريد إلكتروني أو رقم هاتف
             const isEmail = identifier.includes('@');
-            const loginData = isEmail ? {
-                email: identifier,
-                password
-            } : {
-                phone: identifier,
-                password
-            };
+            let loginData;
 
-            const {
-                data,
-                error
-            } = await supabase.auth.signInWithPassword(loginData);
+            if (isEmail) {
+                loginData = { email: identifier, password };
+            } else {
+                // حاليًا Supabase بيدعم تسجيل الدخول بالبريد فقط كـ Password-based auth
+                // لو عايز دعم رقم الهاتف، لازم تستخدم OTP (اضبط في إعدادات Supabase)
+                errorMessage.textContent = 'تسجيل الدخول برقم الهاتف غير مدعوم حاليًا. استخدم البريد الإلكتروني.';
+                return;
+            }
+
+            // تسجيل الدخول باستخدام Supabase
+            const { data, error } = await supabase.auth.signInWithPassword(loginData);
 
             if (error) {
                 errorMessage.textContent = `خطأ: ${error.message}`;
             } else {
-                window.location.href = '/user-dashboard.html'; // Redirect to user dashboard
+                // توجيه بعد تسجيل الدخول (تأكد إن user-dashboard.html موجود)
+                window.location.href = '/user-dashboard.html';
             }
         });
-    </script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script>
-        const SUPABASE_URL = "https://etlzuamrufdhslnjicxi.supabase.co";
-        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV0bHp1YW1ydWZkaHNsbmppY3hpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYxNDQwNTUsImV4cCI6MjA2MTcyMDA1NX0.IaAz5dpS6ImvZHBL43lywa43aDmcxYbeWlsQ9T-Fj2E";
-        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     </script>
 </body>
 
