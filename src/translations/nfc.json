@@ -1,0 +1,23 @@
+{
+  "nfcTags.title": "My NFC Tags",
+  "nfcTags.description": "Manage your pet's NFC identification tags",
+  "nfcTags.empty.title": "No NFC Tags Yet",
+  "nfcTags.empty.description": "You haven't added any NFC tags yet.",
+  "nfcTags.tagCode": "Tag Code",
+  "nfcTags.linkedPet": "Linked Pet",
+  "nfcTags.addedOn": "Added On",
+  "nfcTags.actions": "Actions",
+  "nfcTags.notLinked": "Not linked",
+  "nfcTags.qrDialog.title": "Tag QR Code",
+  "nfcTags.qrDialog.description": "Scan this QR code or share the link to access this tag",
+  "nfcTags.copyLink": "Copy Link",
+  "nfcTags.downloadQR": "Download QR",
+  "nfcTags.openLink": "Open Link",
+  "nfcTags.unlinkDialog.title": "Unlink NFC Tag",
+  "nfcTags.unlinkDialog.description": "Are you sure you want to unlink this NFC tag from {petName}? The tag will remain in your account but won't be associated with any pet.",
+  "nfcTags.deleteDialog.title": "Delete NFC Tag",
+  "nfcTags.deleteDialog.description": "Are you sure you want to delete this NFC tag? This action cannot be undone.",
+  "button.unlink": "Unlink",
+  "button.delete": "Delete",
+  "button.cancel": "Cancel"
+}

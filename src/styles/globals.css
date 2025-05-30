@@ -1,0 +1,235 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Light mode variables */
+    --background: 195 5% 93%; /* #ECF0F1 */
+    --foreground: 196 11% 20%; /* #2D3436 */
+    --primary: 204 70% 53%; /* #3498DB */
+    --primary-foreground: 0 0% 100%; /* #FFFFFF */
+    --secondary: 145 63% 49%; /* #2ECC71 */
+    --secondary-foreground: 0 0% 100%; /* #FFFFFF */
+    --accent: 282 44% 53%; /* #9B59B6 */
+    --accent-foreground: 0 0% 100%; /* #FFFFFF */
+    --destructive: 6 78% 57%; /* #E74C3C */
+    --destructive-foreground: 0 0% 100%; /* #FFFFFF */
+    --muted: 210 20% 98%; /* #F8FAFC */
+    --muted-foreground: 215 16% 47%; /* #64748B */
+    --card: 0 0% 100%; /* #FFFFFF */
+    --card-foreground: 196 11% 20%; /* #2D3436 */
+    --popover: 0 0% 100%; /* #FFFFFF */
+    --popover-foreground: 196 11% 20%; /* #2D3436 */
+    --border: 214 32% 91%; /* #E2E8F0 */
+    --input: 214 32% 91%; /* #E2E8F0 */
+    --ring: 204 70% 53%; /* #3498DB */
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    /* Dark mode variables */
+    --background: 0 0% 10%; /* #1A1A1A */
+    --foreground: 0 0% 100%; /* #FFFFFF */
+    --primary: 204 70% 53%; /* #3498DB */
+    --primary-foreground: 0 0% 100%; /* #FFFFFF */
+    --secondary: 145 63% 49%; /* #2ECC71 */
+    --secondary-foreground: 0 0% 100%; /* #FFFFFF */
+    --accent: 282 44% 53%; /* #9B59B6 */
+    --accent-foreground: 0 0% 100%; /* #FFFFFF */
+    --destructive: 6 78% 57%; /* #E74C3C */
+    --destructive-foreground: 0 0% 100%; /* #FFFFFF */
+    --muted: 217 19% 27%; /* #334155 */
+    --muted-foreground: 215 20% 65%; /* #94A3B8 */
+    --card: 196 11% 20%; /* #2D3436 */
+    --card-foreground: 0 0% 100%; /* #FFFFFF */
+    --popover: 196 11% 20%; /* #2D3436 */
+    --popover-foreground: 0 0% 100%; /* #FFFFFF */
+    --border: 217 19% 27%; /* #334155 */
+    --input: 217 19% 27%; /* #334155 */
+    --ring: 204 70% 53%; /* #3498DB */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-background text-foreground font-sans;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  
+  /* RTL support for Arabic */
+  .rtl {
+    direction: rtl;
+    font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  }
+  
+  .ltr {
+    direction: ltr;
+    font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  }
+  
+  /* Focus styles for accessibility */
+  :focus-visible {
+    @apply outline-none ring-2 ring-primary ring-offset-2;
+  }
+  
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    @apply bg-muted rounded-full;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground;
+  }
+}
+
+@layer components {
+  /* Neumorphic card styles */
+  .card-neumorphic {
+    @apply rounded-xl p-6 transition-all duration-300;
+  }
+  
+  .card-neumorphic.light {
+    @apply neu-flat-light;
+  }
+  
+  .card-neumorphic.dark {
+    @apply neu-flat-dark;
+  }
+  
+  /* Glassmorphic card styles */
+  .card-glass {
+    @apply rounded-xl p-6 backdrop-blur-md transition-all duration-300;
+  }
+  
+  .card-glass.light {
+    @apply glass-light;
+  }
+  
+  .card-glass.dark {
+    @apply glass-dark;
+  }
+  
+  /* Button styles */
+  .btn-neumorphic {
+    @apply rounded-lg px-4 py-2 font-medium transition-all duration-300 focus:outline-none;
+  }
+  
+  .btn-neumorphic.light {
+    @apply neu-btn-light;
+  }
+  
+  .btn-neumorphic.dark {
+    @apply neu-btn-dark;
+  }
+  
+  /* Input styles */
+  .input-neumorphic {
+    @apply w-full rounded-lg px-4 py-2 transition-all duration-300 focus:outline-none;
+  }
+  
+  .input-neumorphic.light {
+    @apply neu-pressed-light;
+  }
+  
+  .input-neumorphic.dark {
+    @apply neu-pressed-dark;
+  }
+  
+  /* 3D effect */
+  .effect-3d {
+    @apply transition-transform duration-300 hover:rotate-1 hover:scale-[1.02];
+  }
+}
+
+/* Animations */
+@keyframes ripple {
+  0% {
+    transform: scale(0);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+.ripple {
+  position: relative;
+  overflow: hidden;
+}
+
+.ripple::after {
+  content: "";
+  display: block;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  background-image: radial-gradient(circle, currentColor 10%, transparent 10.01%);
+  background-repeat: no-repeat;
+  background-position: 50%;
+  transform: scale(10, 10);
+  opacity: 0;
+  transition: transform 0.5s, opacity 1s;
+}
+
+.ripple:active::after {
+  transform: scale(0, 0);
+  opacity: 0.3;
+  transition: 0s;
+}
+
+/* Custom responsive styles appended */
+
+@layer base {
+  /* Mobile-first base styles */
+
+  /* Responsive container padding */
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  @media (min-width: 768px) {
+    .container {
+      padding-left: 2rem;
+      padding-right: 2rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .container {
+      padding-left: 3rem;
+      padding-right: 3rem;
+    }
+  }
+
+  /* Ensure buttons and links have minimum touch target */
+  button, a {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Responsive images: make images fluid */
+  img, picture {
+    max-width: 100%;
+    height: auto;
+    display: block;
+  }
+}
