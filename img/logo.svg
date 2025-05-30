@@ -1,7 +1,0 @@
-<!-- img/logo.svg -->
-<svg width="160" height="160" viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <circle cx="80" cy="80" r="78" stroke="#4b208c" stroke-width="4" fill="white"/>
-  <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="Arial, sans-serif" font-size="28" fill="#4b208c">TagPet</text>
-  <path d="M110 60c0-10-10-15-15-5s5 15 5 15-10-5-15-15c-5-10-15-5-10 5 5 10 15 15 15 15s-10 5-15 15c-5 10 5 15 10 5s15-15 15-15-5 10-5 15c0 10 10 10 10 0 0-5-5-15-5-15s10-5 15-15z"
-    fill="#e83e8c"/>
-</svg>
