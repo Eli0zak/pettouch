@@ -1,12 +1,8 @@
 [build]
   command = "npm run build"
-  publish = "public"
-  functions = "functions"
+  publish = "dist"
 
 [[redirects]]
   from = "/*"
   to = "/index.html"
-  status = 200
-
-[dev]
-  framework = "#static"
+  status = 200 

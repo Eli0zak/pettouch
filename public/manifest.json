@@ -1,0 +1,26 @@
+{
+  "name": "PetVerse",
+  "short_name": "PetVerse",
+  "description": "Manage your pets with digital IDs and NFC tags",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "/pettouch.logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ],
+  "orientation": "portrait",
+  "dir": "auto",
+  "lang": "en-US",
+  "prefer_related_applications": false,
+  "scope": "/"
+}
