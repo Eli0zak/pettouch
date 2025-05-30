@@ -1,0 +1,1 @@
+import{j as m}from"./ui-DskC_GZ4.js";import{q as o}from"./index-fU-TRYU7.js";function n({className:e,...t}){return m.jsx("div",{className:o("animate-pulse rounded-md bg-muted",e),...t})}export{n as S};
