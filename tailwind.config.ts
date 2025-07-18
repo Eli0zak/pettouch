@@ -174,6 +174,14 @@ export default {
 						transform: 'translateY(-5px)',
 					},
 				},
+				slideDown: {
+					'0%': { opacity: '0', transform: 'translateY(-10px)' },
+					'100%': { opacity: '1', transform: 'translateY(0)' }
+				},
+				slideUp: {
+					'0%': { opacity: '1', transform: 'translateY(0)' },
+					'100%': { opacity: '0', transform: 'translateY(-10px)' }
+				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
@@ -184,6 +192,14 @@ export default {
 				'bounce-custom': 'bounce-custom 0.5s ease-in-out',
 				'ripple': 'ripple 0.6s linear',
 				'float': 'float 3s ease-in-out infinite',
+				slideDown: 'slideDown 0.3s ease-out forwards',
+				slideUp: 'slideUp 0.3s ease-out forwards'
+			},
+			spacing: {
+				'safe-top': 'env(safe-area-inset-top)',
+				'safe-bottom': 'env(safe-area-inset-bottom)',
+				'safe-left': 'env(safe-area-inset-left)',
+				'safe-right': 'env(safe-area-inset-right)',
 			},
 		}
 	},
