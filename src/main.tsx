@@ -1,6 +1,6 @@
 import { createRoot } from 'react-dom/client';
 import { lazy, Suspense } from 'react';
-import { PerformanceWrapper } from './components/PerformanceWrapper';
+import { PerformanceWrapper } from '@/components/PerformanceWrapper';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import './index.css';
 // Import fonts and styles
