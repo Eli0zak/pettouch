@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from "@/components/ui/use-toast";
+import { v4 as uuidv4 } from 'uuid';
 
 // Function to compress image before upload
 export async function compressImage(file: File, maxSizeInMB = 1): Promise<File> {
@@ -91,18 +92,26 @@ export async function compressImage(file: File, maxSizeInMB = 1): Promise<File> 
 
 export async function uploadPetImage(file: File, petId: string) {
   try {
+    // Validate inputs
+    if (!(file instanceof File)) {
+      throw new Error('Invalid file input');
+    }
+    if (!petId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(petId)) {
+      throw new Error('Invalid petId');
+    }
+
     // Compress image before upload
     const compressedFile = await compressImage(file);
     console.log(`Original size: ${(file.size / 1024 / 1024).toFixed(2)}MB, Compressed: ${(compressedFile.size / 1024 / 1024).toFixed(2)}MB`);
     
-    const fileExt = 'jpg'; // Always use jpg for compressed images
-    const fileName = `${petId}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+    const fileExt = 'jpg';
+    const fileName = `${petId}-${uuidv4()}.${fileExt}`;
     const filePath = `pets/${fileName}`;
 
     console.log("Starting image upload for pet:", petId, "path:", filePath);
 
     // Upload the file to storage
-    const { error: uploadError, data: uploadData } = await supabase.storage
+    const { error: uploadError } = await supabase.storage
       .from('pet-images')
       .upload(filePath, compressedFile, {
         cacheControl: '3600',
@@ -111,10 +120,10 @@ export async function uploadPetImage(file: File, petId: string) {
       });
 
     if (uploadError) {
-      console.error("Upload error:", uploadError);
+      console.error("Upload error:", uploadError.message);
       toast({
         title: "Upload failed",
-        description: "There was a problem uploading your image. Please try again.",
+        description: `Error: ${uploadError.message}`,
         variant: "destructive"
       });
       throw uploadError;
@@ -122,7 +131,7 @@ export async function uploadPetImage(file: File, petId: string) {
 
     console.log("Upload successful, getting public URL");
 
-    // Get the public URL using the proper method
+    // Get the public URL
     const { data } = await supabase.storage
       .from('pet-images')
       .getPublicUrl(filePath);
@@ -146,8 +155,8 @@ export async function uploadPetImage(file: File, petId: string) {
       .eq('id', petId);
 
     if (updateError) {
-      console.error("Database update error:", updateError);
-      // If update fails, try to delete the uploaded file
+      console.error("Database update error:", updateError.message);
+      // Try to delete the uploaded file
       await supabase.storage
         .from('pet-images')
         .remove([filePath]);
@@ -164,126 +173,15 @@ export async function uploadPetImage(file: File, petId: string) {
     
     toast({
       title: "Image uploaded",
-      description: "Your pet's image has been successfully updated.",
+      description: "Your pet's image has been successfully updated."
     });
     
     return data.publicUrl;
-  } catch (error) {
-    console.error('Error uploading image:', error);
+  } catch (error: any) {
+    console.error('Error uploading image:', error.message);
     toast({
       title: "Upload error",
-      description: "An unexpected error occurred while uploading your image.",
-      variant: "destructive"
-    });
-    throw error;
-  }
-}
-
-// New function to upload multiple pet images
-export async function uploadMultiplePetImages(files: File[], petId: string, setPrimaryImage: boolean = false) {
-  try {
-    const uploadedImages = [];
-    let primaryImageUrl = null;
-    
-    // Get current user
-    const { data: userData, error: userError } = await supabase.auth.getUser();
-      
-    if (userError) throw userError;
-    if (!userData || !userData.user) {
-      throw new Error('User authentication required');
-    }
-
-    const userId = userData.user.id;
-    
-    // Process each file
-    for (const file of files) {
-      // Compress image before upload
-      const compressedFile = await compressImage(file);
-      
-      const fileExt = 'jpg'; // Always use jpg for compressed images
-      const fileName = `${petId}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `pets/${fileName}`;
-      
-      // Upload the file to storage
-      const { error: uploadError } = await supabase.storage
-        .from('pet-images')
-        .upload(filePath, compressedFile, {
-          cacheControl: '3600',
-          upsert: false,
-          contentType: 'image/jpeg'
-        });
-
-      if (uploadError) {
-        console.error("Upload error:", uploadError);
-        continue;
-      }
-      
-      // Get the public URL
-      const { data } = await supabase.storage
-        .from('pet-images')
-        .getPublicUrl(filePath);
-
-      if (!data?.publicUrl) {
-        console.error("Failed to get public URL");
-        continue;
-      }
-      
-      // Determine if this should be the primary image
-      const isPrimary = setPrimaryImage && uploadedImages.length === 0;
-      
-      // Store image in pet_images table
-      const { data: imageData, error: insertError } = await supabase
-        .from('pet_images')
-        .insert({
-          pet_id: petId,
-          image_url: data.publicUrl,
-          is_primary: isPrimary,
-          user_id: userId,
-          caption: file.name.split('.')[0] // Use filename as default caption
-        })
-        .select()
-        .single();
-      
-      if (insertError) {
-        console.error("Database insert error:", insertError);
-        // If insert fails, try to delete the uploaded file
-        await supabase.storage
-          .from('pet-images')
-          .remove([filePath]);
-        continue;
-      }
-      
-      uploadedImages.push(imageData);
-      
-      // If this is the primary image, save the URL
-      if (isPrimary) {
-        primaryImageUrl = data.publicUrl;
-      }
-    }
-    
-    // Show success message
-    if (uploadedImages.length > 0) {
-      toast({
-        title: "Images uploaded",
-        description: `Successfully uploaded ${uploadedImages.length} image${uploadedImages.length > 1 ? 's' : ''}.`,
-      });
-    } else {
-      toast({
-        title: "Upload failed",
-        description: "No images were uploaded successfully.",
-        variant: "destructive"
-      });
-    }
-    
-    return {
-      images: uploadedImages,
-      primaryImageUrl
-    };
-  } catch (error) {
-    console.error('Error uploading images:', error);
-    toast({
-      title: "Upload error",
-      description: "An unexpected error occurred while uploading your images.",
+      description: `Error: ${error.message}`,
       variant: "destructive"
     });
     throw error;
@@ -292,19 +190,27 @@ export async function uploadMultiplePetImages(files: File[], petId: string, setP
 
 export async function uploadLostFoundImage(file: File, postId: string) {
   try {
+    // Validate inputs
+    if (!(file instanceof File)) {
+      throw new Error('Invalid file input');
+    }
+    if (!postId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(postId)) {
+      throw new Error('Invalid postId');
+    }
+
     // Compress image before upload
     const compressedFile = await compressImage(file);
     console.log(`Original size: ${(file.size / 1024 / 1024).toFixed(2)}MB, Compressed: ${(compressedFile.size / 1024 / 1024).toFixed(2)}MB`);
     
-    const fileExt = 'jpg'; // Always use jpg for compressed images
-    const fileName = `${postId}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-    const filePath = `lost-found/${fileName}`;
+    const fileExt = 'jpg';
+    const fileName = `${postId}-${uuidv4()}.${fileExt}`;
+    const filePath = `lost-found/${fileName}`; // Fixed path
 
     console.log("Starting lost/found image upload for post:", postId, "path:", filePath);
 
     // Upload the file to storage
     const { error: uploadError } = await supabase.storage
-      .from('pet-images')
+      .from('lost-found')
       .upload(filePath, compressedFile, {
         cacheControl: '3600',
         upsert: false,
@@ -312,45 +218,18 @@ export async function uploadLostFoundImage(file: File, postId: string) {
       });
 
     if (uploadError) {
-      // If error is because folder doesn't exist, create it and retry
-      if (uploadError.message.includes('not found') || uploadError.message.toLowerCase().includes('does not exist')) {
-        // Create folder by uploading a placeholder file
-        await supabase.storage
-          .from('pet-images')
-          .upload('lost-found/.keep', new Blob([]));
-        
-        // Retry the original upload
-        const { error: retryError } = await supabase.storage
-          .from('pet-images')
-          .upload(filePath, compressedFile, {
-            cacheControl: '3600',
-            upsert: false,
-            contentType: 'image/jpeg'
-          });
-          
-        if (retryError) {
-          console.error("Upload retry error:", retryError);
-          toast({
-            title: "Upload failed",
-            description: "There was a problem uploading your image. Please try again.",
-            variant: "destructive"
-          });
-          throw retryError;
-        }
-      } else {
-        console.error("Upload error:", uploadError);
-        toast({
-          title: "Upload failed",
-          description: "There was a problem uploading your image. Please try again.",
-          variant: "destructive"
-        });
-        throw uploadError;
-      }
+      console.error("Upload error:", uploadError.message);
+      toast({
+        title: "Upload failed",
+        description: `Error: ${uploadError.message}`,
+        variant: "destructive"
+      });
+      throw uploadError;
     }
 
     // Get the public URL
     const { data } = await supabase.storage
-      .from('pet-images')
+      .from('lost-found')
       .getPublicUrl(filePath);
 
     if (!data?.publicUrl) {
@@ -363,77 +242,68 @@ export async function uploadLostFoundImage(file: File, postId: string) {
       throw new Error('Failed to get public URL for uploaded image');
     }
 
-    // Update the post's image_url in the database
-    const { error: updateError } = await supabase
-      .from('lost_found_posts')
-      .update({ image_url: data.publicUrl })
-      .eq('id', postId);
-
-    if (updateError) {
-      console.error("Database update error:", updateError);
-      // If update fails, try to delete the uploaded file
-      await supabase.storage
-        .from('pet-images')
-        .remove([filePath]);
-      
-      toast({
-        title: "Update failed",
-        description: "Your image was uploaded but we couldn't update your report. Please try again.",
-        variant: "destructive"
-      });
-      throw updateError;
-    }
-
+    // Note: Database update is handled in ReportFormModal.tsx
     toast({
       title: "Image uploaded",
-      description: "Your report image has been successfully added.",
+      description: "Your report image has been successfully uploaded."
     });
 
     return data.publicUrl;
-  } catch (error) {
-    console.error('Error uploading image:', error);
+  } catch (error: any) {
+    console.error('Error uploading image:', error.message);
     toast({
       title: "Upload error",
-      description: "An unexpected error occurred while uploading your image.",
+      description: `Error: ${error.message}`,
       variant: "destructive"
     });
     throw error;
   }
 }
 
-// Function to set a pet image as primary
 export async function setPetImageAsPrimary(imageId: string, petId: string) {
   try {
+    if (!imageId || !petId) {
+      throw new Error('Invalid imageId or petId');
+    }
     const { error } = await supabase
       .from('pet_images')
       .update({ is_primary: true })
       .eq('id', imageId)
       .eq('pet_id', petId);
     
-    if (error) throw error;
+    if (error) {
+      console.error("Supabase error:", error.message);
+      throw error;
+    }
     
     return true;
-  } catch (error) {
-    console.error('Error setting primary image:', error);
+  } catch (error: any) {
+    console.error('Error setting primary image:', error.message);
     toast({
       title: "Update failed",
-      description: "Failed to set image as primary. Please try again.",
+      description: `Error: ${error.message}`,
       variant: "destructive"
     });
     throw error;
   }
 }
 
-// Function to delete a pet image
 export async function deletePetImage(imageId: string, imageUrl: string) {
   try {
+    if (!imageId || !imageUrl) {
+      throw new Error('Invalid imageId or imageUrl');
+    }
+
     // Delete from database first
     const { error: deleteError } = await supabase
       .from('pet_images')
       .delete()
       .eq('id', imageId);
     
-    if (deleteError) throw deleteError;
+    if (deleteError) {
+      console.error("Supabase delete error:", deleteError.message);
+      throw deleteError;
+    }
     
     // Try to delete from storage
     try {
@@ -443,22 +313,54 @@ export async function deletePetImage(imageId: string, imageUrl: string) {
       await supabase.storage
         .from('pet-images')
         .remove([`pets/${fileName}`]);
-    } catch (storageError) {
-      console.error('Error deleting image from storage:', storageError);
+    } catch (storageError: any) {
+      console.error('Error deleting image from storage:', storageError.message);
       // Continue even if storage deletion fails
     }
     
     toast({
       title: "Image deleted",
-      description: "Image has been successfully deleted.",
+      description: "Image has been successfully deleted."
     });
     
     return true;
-  } catch (error) {
-    console.error('Error deleting image:', error);
+  } catch (error: any) {
+    console.error('Error deleting image:', error.message);
     toast({
       title: "Delete failed",
-      description: "Failed to delete image. Please try again.",
+      description: `Error: ${error.message}`,
+      variant: "destructive"
+    });
+    throw error;
+  }
+}
+
+// New function to upload multiple pet images
+export async function uploadMultiplePetImages(files: File[], petId: string, isFirstImage: boolean) {
+  try {
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const publicUrl = await uploadPetImage(file, petId);
+      // If this is the first image and the first file, set it as primary
+      if (isFirstImage && i === 0) {
+        // Find the image record by publicUrl and set as primary
+        const { data, error } = await supabase
+          .from('pet_images')
+          .select('id')
+          .eq('image_url', publicUrl)
+          .single();
+        if (error) {
+          console.error('Error fetching uploaded image record:', error);
+          continue;
+        }
+        await setPetImageAsPrimary(data.id, petId);
+      }
+    }
+  } catch (error: any) {
+    console.error('Error uploading multiple pet images:', error);
+    toast({
+      title: "Upload error",
+      description: `Error: ${error.message}`,
       variant: "destructive"
     });
     throw error;
