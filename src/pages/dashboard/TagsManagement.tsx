@@ -1,54 +1,35 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from "@/components/ui/table";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogFooter, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogTrigger 
-} from "@/components/ui/dialog";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from '@/integrations/supabase/client';
-import { Tag, Link, TagIcon, User } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { logger } from '@/utils/logger';
-import { NfcTag } from '@/types';
+import { NfcTag, Pet } from '@/types';
+import TagsFilters from '@/components/dashboard/tags-management/TagsFilters';
+import TagsGrid from '@/components/dashboard/tags-management/TagsGrid';
+import { Tag, Link } from 'lucide-react';
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const TagsManagement = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const { t, i18n } = useTranslation();
   const [tags, setTags] = useState<NfcTag[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const [activeFilter, setActiveFilter] = useState<string>('all');
   const [selectedTag, setSelectedTag] = useState<NfcTag | null>(null);
   const [showLinkDialog, setShowLinkDialog] = useState<boolean>(false);
   const [availablePets, setAvailablePets] = useState<{ id: string, name: string }[]>([]);
   const [selectedPetId, setSelectedPetId] = useState<string>('');
-  const [newTagCode, setNewTagCode] = useState<string>('');
-  const [showAddDialog, setShowAddDialog] = useState<boolean>(false);
   const [baseUrl, setBaseUrl] = useState<string>(window.location.origin);
 
   // Fetch user's NFC tags
@@ -68,22 +49,12 @@ const TagsManagement = () => {
         return;
       }
       
-      logger.info("Fetching tags for user", { userId: session.user.id });
+      logger.info("Fetching tags for user", { userId: session.user.id, path: location.pathname });
       
-      const { data: tags, error } = await supabase
+      const { data: fetchedTags, error } = await supabase
         .from('nfc_tags')
         .select(`
-          id,
-          tag_code,
-          pet_id,
-          user_id,
-          created_at,
-          activated_at,
-          is_active,
-          notes,
-          tag_type,
-          status,
-          last_updated,
+          *,
           pet:pet_id (
             name,
             profile_image_url
@@ -93,13 +64,13 @@ const TagsManagement = () => {
         .order('created_at', { ascending: false });
       
       if (error) {
-        logger.error("Error fetching tags", { error, userId: session.user.id });
+        logger.error("Error fetching tags", { error, userId: session.user.id, path: location.pathname });
         throw error;
       }
       
-      logger.info("Tags found", { count: tags?.length || 0, userId: session.user.id });
+      logger.info("Tags found", { count: fetchedTags?.length || 0, userId: session.user.id });
       
-      if (!tags || tags.length === 0) {
+      if (!fetchedTags || fetchedTags.length === 0) {
         logger.info("Adding sample tag data for UI testing", { userId: session.user.id });
         
         // Add some sample tags for demonstration
@@ -154,7 +125,7 @@ const TagsManagement = () => {
           }
         ];
         
-        setTags(sampleTags);
+        setTags(sampleTags as NfcTag[]);
         
         // Also set some sample pets
         if (availablePets.length === 0) {
@@ -164,10 +135,15 @@ const TagsManagement = () => {
           ]);
         }
       } else {
-        setTags(tags);
+        // Transform pet array to single object or null
+        const transformedTags = fetchedTags.map(tag => ({
+          ...tag,
+          pet: Array.isArray(tag.pet) ? (tag.pet.length > 0 ? tag.pet[0] : null) : tag.pet
+        })) as NfcTag[];
+        setTags(transformedTags);
       }
     } catch (error) {
-      logger.error('Error fetching NFC tags', { error });
+      logger.error('Error fetching NFC tags', { error, path: location.pathname });
       toast({
         title: t('error'),
         description: t('common.error'),
@@ -197,7 +173,7 @@ const TagsManagement = () => {
       
       setAvailablePets(pets || []);
     } catch (error) {
-      logger.error('Error fetching available pets', { error });
+      logger.error('Error fetching available pets', { error, path: location.pathname });
     }
   };
 
@@ -264,7 +240,7 @@ const TagsManagement = () => {
         description: t('tagAdded'),
       });
     } catch (error) {
-      logger.error('Error adding NFC tag', { error, tagCode: newTagCode });
+      logger.error('Error adding NFC tag', { error, tagCode: newTagCode, path: location.pathname });
       toast({
         title: t('error'),
         description: t('common.error'),
@@ -278,51 +254,57 @@ const TagsManagement = () => {
     try {
       if (!selectedTag) return;
       
-      const { data: updatedTag, error } = await supabase
-        .from('nfc_tags')
-        .update({
-          pet_id: selectedPetId || null,
-          status: selectedPetId ? 'assigned' : 'unassigned',
-          activated_at: selectedPetId ? new Date().toISOString() : null
-        })
-        .eq('id', selectedTag.id)
-        .select(`
-          id,
-          tag_code,
-          pet_id,
-          user_id,
-          created_at,
-          activated_at,
-          is_active,
-          notes,
-          tag_type,
-          status,
-          last_updated,
-          pet:pet_id (
-            name,
-            profile_image_url
-          )
-        `)
-        .single();
-      
-      if (error) {
-        throw error;
-      }
-      
-      setTags(prevTags => prevTags.map(tag => 
-        tag.id === updatedTag.id ? updatedTag : tag
-      ));
-      
-      setShowLinkDialog(false);
-      
-      toast({
-        title: t('success'),
-        description: selectedPetId
-          ? t('nfcTags.linkDialog.success')
-          : t('tagUnlinked'),
-      });
+  const { data: updatedTag, error } = await supabase
+    .from('nfc_tags')
+    .update({
+      pet_id: selectedPetId || null,
+      status: selectedPetId ? 'assigned' : 'unassigned',
+      activated_at: selectedPetId ? new Date().toISOString() : null
+    })
+    .eq('id', selectedTag.id)
+    .select(`
+      id,
+      tag_code,
+      pet_id,
+      user_id,
+      created_at,
+      activated_at,
+      is_active,
+      notes,
+      tag_type,
+      status,
+      last_updated,
+      pet:pet_id (
+        name,
+        profile_image_url
+      )
+    `)
+    .single();
+  
+  if (error) {
+    throw error;
+  }
+  
+  // Transform pet array to single object or null
+  const transformedTag = {
+    ...updatedTag,
+    pet: Array.isArray(updatedTag.pet) ? (updatedTag.pet.length > 0 ? updatedTag.pet[0] : null) : updatedTag.pet
+  };
+  
+  setTags(prevTags => prevTags.map(tag => 
+    tag.id === transformedTag.id ? transformedTag : tag
+  ));
+  
+  setShowLinkDialog(false);
+  
+  toast({
+    title: t('success'),
+    description: selectedPetId
+      ? t('nfcTags.linkDialog.success')
+      : t('tagUnlinked'),
+  });
     } catch (error) {
-      logger.error('Error linking tag to pet', { error, tagId: selectedTag?.id, petId: selectedPetId });
+      logger.error('Error linking tag to pet', { error, tagId: selectedTag?.id, petId: selectedPetId, path: location.pathname });
       toast({
         title: t('error'),
         description: t('nfcTags.linkDialog.error'),
@@ -350,47 +332,53 @@ const TagsManagement = () => {
     }
     
     try {
-      const { data: updatedTag, error } = await supabase
-        .from('nfc_tags')
-        .update({
-          is_active: !isActive
-        })
-        .eq('id', tagId)
-        .select(`
-          id,
-          tag_code,
-          pet_id,
-          user_id,
-          created_at,
-          activated_at,
-          is_active,
-          notes,
-          tag_type,
-          status,
-          last_updated,
-          pet:pet_id (
-            name,
-            profile_image_url
-          )
-        `)
-        .single();
-      
-      if (error) {
-        throw error;
-      }
-      
-      setTags(prevTags => prevTags.map(tag => 
-        tag.id === updatedTag.id ? updatedTag : tag
-      ));
-      
-      toast({
-        title: t('success'),
-        description: updatedTag.is_active
-          ? t('tagActivated')
-          : t('tagDeactivated'),
-      });
+  const { data: updatedTag, error } = await supabase
+    .from('nfc_tags')
+    .update({
+      is_active: !isActive
+    })
+    .eq('id', tagId)
+    .select(`
+      id,
+      tag_code,
+      pet_id,
+      user_id,
+      created_at,
+      activated_at,
+      is_active,
+      notes,
+      tag_type,
+      status,
+      last_updated,
+      pet:pet_id (
+        name,
+        profile_image_url
+      )
+    `)
+    .single();
+  
+  if (error) {
+    throw error;
+  }
+  
+  // Transform pet array to single object or null
+  const transformedTag = {
+    ...updatedTag,
+    pet: Array.isArray(updatedTag.pet) ? (updatedTag.pet.length > 0 ? updatedTag.pet[0] : null) : updatedTag.pet
+  };
+  
+  setTags(prevTags => prevTags.map(tag => 
+    tag.id === transformedTag.id ? transformedTag : tag
+  ));
+  
+  toast({
+    title: t('success'),
+    description: updatedTag.is_active
+      ? t('tagActivated')
+      : t('tagDeactivated'),
+  });
     } catch (error) {
-      logger.error('Error toggling tag status', { error, tagId, isActive });
+      logger.error('Error toggling tag status', { error, tagId, isActive, path: location.pathname });
       toast({
         title: t('error'),
         description: t('common.error'),
@@ -446,98 +434,31 @@ const TagsManagement = () => {
         <p className="text-gray-600">{t('nfcTags.description')}</p>
       </div>
       
-      <div className="flex flex-col md:flex-row justify-between mb-6 gap-4">
-        <div className="relative">
-          <Input
-            type="text"
-            placeholder={t('placeholder.search')}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="max-w-sm"
-          />
-        </div>
-        
-        <Button onClick={() => setShowAddDialog(true)}>
-          <Tag className="h-4 w-4 mr-2" />
-          {t('nfcTags.addNew')}
-        </Button>
+      <div className="mb-6">
+        <TagsFilters activeFilter={activeFilter} onChange={setActiveFilter} />
       </div>
       
-      <Tabs defaultValue="all" className="mb-8">
-        <TabsList className="mb-4">
-          <TabsTrigger value="all">{t('community.filters.all')}</TabsTrigger>
-          <TabsTrigger value="assigned">{t('dashboard.assigned')}</TabsTrigger>
-          <TabsTrigger value="unassigned">{t('dashboard.unassigned')}</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="all">
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('allTags')}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {renderTagsTable(filteredTags)}
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="assigned">
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('assignedTags')}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {renderTagsTable(filteredTags.filter(tag => tag.status === 'assigned'))}
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="unassigned">
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('unassignedTags')}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {renderTagsTable(filteredTags.filter(tag => tag.status === 'unassigned'))}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+      <div>
+        <Input
+          type="text"
+          placeholder={t('search.placeholder')}
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="max-w-sm mb-6"
+        />
+      </div>
       
-      {/* Add new tag dialog */}
-      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t('nfcTags.addDialog.title')}</DialogTitle>
-            <DialogDescription>
-              {t('nfcTags.addDialog.description')}
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <label htmlFor="tag-code" className="text-sm font-medium">
-                {t('nfcTags.tagCode')}
-              </label>
-              <Input
-                id="tag-code"
-                placeholder={t('enterTagCode')}
-                value={newTagCode}
-                onChange={(e) => setNewTagCode(e.target.value)}
-              />
-            </div>
-          </div>
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAddDialog(false)}>
-              {t('button.cancel')}
-            </Button>
-            <Button onClick={handleAddTag}>
-              {t('nfcTags.add')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <div>
+        <TagsGrid
+          tags={filteredTags.filter(tag => {
+            if (activeFilter === 'all') return true;
+            return tag.status === activeFilter;
+          })}
+          onLinkPet={openLinkDialog}
+          onToggleStatus={handleToggleTagStatus}
+          onCopyLink={handleCopyTagLink}
+        />
+      </div>
       
       {/* Link tag to pet dialog */}
       <Dialog open={showLinkDialog} onOpenChange={setShowLinkDialog}>
@@ -590,126 +511,6 @@ const TagsManagement = () => {
     </div>
   );
 
-  // Render tags table
-  function renderTagsTable(tagsToRender: NfcTag[]) {
-    if (loading) {
-      return (
-        <div className="text-center py-8 text-gray-500">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-gray-900 mx-auto mb-4"></div>
-          <p>{t('common.loading')}</p>
-        </div>
-      );
-    }
-    
-    if (tagsToRender.length === 0) {
-      return (
-        <div className="text-center py-8 text-gray-500">
-          <Tag className="mx-auto h-10 w-10 mb-4 text-gray-400" />
-          <p>{t('nfcTags.empty.title')}</p>
-          <p className="mt-2">{t('nfcTags.empty.description')}</p>
-        </div>
-      );
-    }
-    
-    return (
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>{t('nfcTags.tagCode')}</TableHead>
-            <TableHead>{t('nfcTags.status')}</TableHead>
-            <TableHead>{t('nfcTags.linkedPet')}</TableHead>
-            <TableHead>{t('nfcTags.addedOn')}</TableHead>
-            <TableHead>{t('admin.common.actions')}</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {tagsToRender.map((tag) => (
-            <TableRow key={tag.id}>
-              <TableCell className="font-medium">
-                {tag.tag_code}
-              </TableCell>
-              <TableCell>
-                <Badge 
-                  variant={getStatusVariant(tag.status)}
-                  className={`${!tag.is_active ? 'opacity-50' : ''}`}
-                >
-                  {getStatusLabel(tag.status, tag.is_active)}
-                </Badge>
-              </TableCell>
-              <TableCell>
-                {tag.pet ? tag.pet.name : t('nfcTags.notLinked')}
-              </TableCell>
-              <TableCell>
-                {new Date(tag.created_at).toLocaleDateString(i18n.language)}
-              </TableCell>
-              <TableCell>
-                <div className="flex space-x-2 rtl:space-x-reverse">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => openLinkDialog(tag)}
-                  >
-                    <Link className="h-4 w-4 mr-2" />
-                    {tag.pet_id ? t('changeLink') : t('link')}
-                  </Button>
-                  
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => handleToggleTagStatus(tag.id, tag.is_active)}
-                  >
-                    {tag.is_active ? t('deactivate') : t('activate')}
-                  </Button>
-                  
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => handleCopyTagLink(tag.tag_code)}
-                  >
-                    {t('nfcTags.copyLink')}
-                  </Button>
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    );
-  }
-
-  // Get badge variant by status
-  function getStatusVariant(status: string): "default" | "secondary" | "destructive" | "outline" {
-    switch (status) {
-      case 'assigned':
-        return 'default';
-      case 'unassigned':
-        return 'secondary';
-      case 'lost':
-        return 'destructive';
-      case 'disabled':
-        return 'outline';
-      default:
-        return 'outline';
-    }
-  }
-
-  // Get status label
-  function getStatusLabel(status: string, isActive: boolean): string {
-    if (!isActive) return t('dashboard.deactivated');
-    
-    switch (status) {
-      case 'assigned':
-        return t('dashboard.assigned');
-      case 'unassigned':
-        return t('dashboard.unassigned');
-      case 'lost':
-        return t('lost.status.lost');
-      case 'disabled':
-        return t('dashboard.deactivated');
-      default:
-        return status;
-    }
-  }
 };
 
 export default TagsManagement;

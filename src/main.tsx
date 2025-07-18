@@ -1,10 +1,16 @@
-import { createRoot } from 'react-dom/client'
-import App from './App.tsx'
-import './index.css'
-// Import fonts
-import './styles/fonts.css'
+import { createRoot } from 'react-dom/client';
+import { lazy, Suspense } from 'react';
+import { PerformanceWrapper } from './components/PerformanceWrapper';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import './index.css';
+// Import fonts and styles
+import './styles/fonts.css';
+import './styles/animations.css';
 // Import i18n configuration
-import './utils/i18n'
+import './utils/i18n';
+
+// Lazy load the main App component
+const App = lazy(() => import('./App.tsx'));
 
 // Add RTL support styles
 const style = document.createElement('style');
@@ -36,4 +42,18 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
-createRoot(document.getElementById("root")!).render(<App />);
+// Initialize performance monitoring
+if (process.env.NODE_ENV === 'production') {
+  // Only measure in production
+  import('./utils/performance').then(({ measureWebVitals }) => {
+    measureWebVitals();
+  });
+}
+
+createRoot(document.getElementById("root")!).render(
+  <PerformanceWrapper>
+    <Suspense fallback={<LoadingSpinner size="lg" />}>
+      <App />
+    </Suspense>
+  </PerformanceWrapper>
+);

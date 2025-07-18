@@ -7,7 +7,7 @@ type Language = 'en' | 'ar';
 type LanguageContextType = {
   language: Language;
   setLanguage: (language: Language) => void;
-  t: (key: string) => string;
+  t: (key: string, values?: Record<string, string | number>) => string;
   dir: () => "ltr" | "rtl";
   isRTL: boolean;
   isDebugMode: boolean;
@@ -20,9 +20,14 @@ type LanguageContextType = {
 import enTranslations from '@/translations/en.json';
 import arTranslations from '@/translations/ar.json';
 
+// Merge translations
 const translations = {
-  en: enTranslations,
-  ar: arTranslations
+  en: {
+    translation: enTranslations
+  },
+  ar: {
+    translation: arTranslations
+  }
 };
 
 // Global collection of missing keys for monitoring
@@ -91,54 +96,28 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
     });
   };
 
-  const t = (key: string): string => {
-    try {
-      // Check if translation exists in current language
-      const translation = translations[language][key];
-      
-      // If translation exists, return it
-      if (translation) return translation;
-      
-      // If not found in current language, try English as fallback
-      const fallbackTranslation = language !== 'en' ? translations['en'][key] : null;
-      
-      // If not found in any language, mark as missing
-      if (!fallbackTranslation) {
-        if (process.env.NODE_ENV === 'development') {
-          logger.warn(`Translation missing for key: ${key}`, { key, language });
-          
-          // Track missing key without causing state update during render
-          if (!globalMissingKeys[key]) {
-            globalMissingKeys[key] = true;
-            pendingMissingKeysRef.current[key] = true;
-          }
-        }
-        
-        // In debug mode, return a highlighted version of the key
-        if (isDebugMode) {
-          return `[${key}]`;
-        }
-        
-        // Otherwise just return the key as fallback
-        return key;
-      }
-      
-      // If debug mode is on and we're using fallback, highlight it
-      if (isDebugMode && language !== 'en' && fallbackTranslation) {
-        return `[${fallbackTranslation}]`;
-      }
-      
-      return fallbackTranslation || key;
-    } catch (error) {
-      logger.warn(`Error getting translation for key: ${key}`, { error, key, language });
-      
-      // In debug mode, return a highlighted version of the key
+  const t = (key: string, values?: Record<string, string | number>): string => {
+    const translation = i18n.t(key, values);
+    
+    // Check if the translation is missing (equals the key)
+    if (translation === key && key !== '') {
       if (isDebugMode) {
-        return `[${key}]`;
+        pendingMissingKeysRef.current[key] = true;
+        globalMissingKeys[key] = true;
+        
+        // Log missing key in development
+        logger.warn(`Translation missing for key: ${key}`, { key });
+        
+        // Schedule an update of the missing keys state
+        setTimeout(() => {
+          setMissingKeys({ ...globalMissingKeys });
+        }, 0);
       }
-      
-      return key;
+      // Return a more user-friendly fallback in production
+      return process.env.NODE_ENV === 'production' ? key.split('.').pop() || key : `[${key}]`;
     }
+    
+    return translation;
   };
 
   const dir = (): "ltr" | "rtl" => {

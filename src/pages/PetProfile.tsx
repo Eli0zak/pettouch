@@ -23,11 +23,21 @@ const PetProfile = () => {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const { toast } = useToast();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, userId } = useAuth();
   const { t } = useLanguage();
 
   useEffect(() => {
     const fetchPet = async () => {
+      if (!isAuthenticated) {
+        toast({
+          title: "Authentication Required",
+          description: "Please login to view pet profiles",
+          variant: "destructive",
+        });
+        setNotFound(true);
+        setLoading(false);
+        return;
+      }
       if (!id) {
         setNotFound(true);
         setLoading(false);
@@ -37,7 +47,7 @@ const PetProfile = () => {
       try {
         const { data, error } = await supabase
           .from('pets')
-          .select('*')
+          .select('*, owner_id')
           .eq('id', id)
           .single();
 
@@ -45,8 +55,19 @@ const PetProfile = () => {
           logger.error('Error fetching pet', { error, petId: id });
           setNotFound(true);
         } else if (data) {
-          logger.info('Pet data fetched successfully', { petId: id, petName: data.name });
-          setPet(data);
+          // Check if the user is the owner of the pet
+          if (data.owner_id !== userId) {
+            logger.warn('Unauthorized access attempt to pet profile', { petId: id, userId });
+            toast({
+              title: "Access Denied",
+              description: "You don't have permission to view this pet profile",
+              variant: "destructive",
+            });
+            setNotFound(true);
+          } else {
+            logger.info('Pet data fetched successfully', { petId: id, petName: data.name });
+            setPet(data);
+          }
         } else {
           setNotFound(true);
         }

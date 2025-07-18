@@ -16,7 +16,6 @@ import PageGuard from '@/components/PageGuard';
 // Home Pages
 const Index = lazy(() => import('@/pages/Index'));
 const About = lazy(() => import('@/pages/About'));
-const FeaturesPage = lazy(() => import('@/pages/FeaturesPage'));
 const LearnMore = lazy(() => import('@/pages/LearnMore'));
 const GetStarted = lazy(() => import('@/pages/GetStarted'));
 const Store = lazy(() => import('@/pages/Store'));
@@ -28,8 +27,9 @@ const CommunityReports = lazy(() => import('@/pages/CommunityReports'));
 const Auth = lazy(() => import('@/pages/Auth'));
 
 // Dashboard Pages
-const Dashboard = lazy(() => import('@/pages/Dashboard'));
+const Dashboard = lazy(() => import('@/pages/dashboard/Dashboard'));
 const MyPets = lazy(() => import('@/pages/dashboard/MyPets'));
+const TipDetail = lazy(() => import('@/pages/dashboard/TipDetail'));
 const LostFound = lazy(() => import('@/pages/dashboard/LostFound'));
 const ScanActivity = lazy(() => import('@/pages/dashboard/ScanActivity'));
 const Settings = lazy(() => import('@/pages/dashboard/Settings'));
@@ -51,6 +51,7 @@ const AdminOrders = lazy(() => import('@/pages/admin/AdminOrders'));
 const AdminProducts = lazy(() => import('@/pages/admin/AdminProducts'));
 const AdminUpgradeRequests = lazy(() => import('@/pages/admin/AdminUpgradeRequests'));
 const AdminTags = lazy(() => import('@/pages/admin/AdminTags'));
+const ArticleManagement = lazy(() => import('@/pages/admin/ArticleManagement'));
 
 // Other Pages
 const PetProfile = lazy(() => import('@/pages/PetProfile'));
@@ -76,7 +77,6 @@ function AppContent() {
         <Route path="/" element={<Layout><Outlet /></Layout>}>
           <Route index element={<Index />} />
           <Route path="about" element={<About />} />
-          <Route path="features" element={<FeaturesPage />} />
           <Route path="learn-more" element={<LearnMore />} />
           <Route path="get-started" element={<GetStarted />} />
           <Route path="store" element={<Store />} />
@@ -170,6 +170,13 @@ function AppContent() {
             </DashboardLayout>
           </PageGuard>
         } />
+        <Route path="/dashboard/tips/:articleId" element={
+          <PageGuard requireAuth={true}>
+            <DashboardLayout>
+              <TipDetail />
+            </DashboardLayout>
+          </PageGuard>
+        } />
         <Route path="/dashboard/subscription" element={
           <PageGuard requireAuth={true}>
             <DashboardLayout>
@@ -201,6 +208,7 @@ function AppContent() {
           <Route path="orders" element={<AdminOrders />} />
           <Route path="tags" element={<AdminTags />} />
           <Route path="upgrade-requests" element={<AdminUpgradeRequests />} />
+          <Route path="articles" element={<ArticleManagement />} />
         </Route>
 
         {/* Fallback Routes */}

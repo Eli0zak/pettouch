@@ -24,7 +24,11 @@ const Checkout = () => {
   const navigate = useNavigate();
   const { cartItems, subtotal, totalItems, clearCart } = useCart();
   const { toast } = useToast();
-  
+
+  const shippingFee = 60;
+  const taxFee = 0;
+  const total = subtotal + shippingFee + taxFee;
+
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -37,19 +41,19 @@ const Checkout = () => {
     country: 'US',
     notes: '',
   });
-  
+
   const [loading, setLoading] = useState(false);
-  
+
   // Handle form changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
-  
+
   // Handle checkout
   const handleCheckout = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    
+
     if (cartItems.length === 0) {
       toast({
         title: "Cart is empty",
@@ -58,12 +62,12 @@ const Checkout = () => {
       });
       return;
     }
-    
+
     try {
       setLoading(true);
-      
+
       // TODO: Implement payment gateway integration here
-      
+
       // Create order in database
       const orderItems = cartItems.map(item => ({
         product_id: item.product.id,
@@ -72,7 +76,7 @@ const Checkout = () => {
         product_name: item.product.name,
         selected_attributes: item.selected_attributes || {},
       }));
-      
+
       const shippingAddress = {
         name: `${formData.firstName} ${formData.lastName}`,
         street: formData.address,
@@ -84,10 +88,10 @@ const Checkout = () => {
         phone: formData.phone,
         is_default: false
       };
-      
+
       // Check user authentication
       const { data: { user } } = await supabase.auth.getUser();
-      
+
       if (!user) {
         toast({
           title: "Authentication required",
@@ -97,15 +101,15 @@ const Checkout = () => {
         navigate('/auth', { state: { returnUrl: '/checkout' } });
         return;
       }
-      
+
       const { error } = await supabase.from('store_orders').insert({
         user_id: user.id,
         items: orderItems,
         shipping_address: shippingAddress,
-        total_amount: Number(subtotal.toFixed(2)),
+        total_amount: Number(total.toFixed(2)),
         subtotal: Number(subtotal.toFixed(2)),
-        shipping_fee: 0,
-        tax: 0,
+        shipping_fee: shippingFee,
+        tax: taxFee,
         discount: 0,
         status: 'pending',
         payment_info: {
@@ -119,17 +123,17 @@ const Checkout = () => {
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       });
-      
+
       if (error) throw error;
-      
+
       // Reset cart and redirect to success page
       clearCart();
-      
+
       toast({
         title: "Order placed successfully",
         description: "Thank you for your purchase!",
       });
-      
+
       navigate('/dashboard/orders');
     } catch (error: any) {
       console.error('Checkout error:', error);
@@ -341,17 +345,17 @@ const Checkout = () => {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm">Shipping</span>
-                  <span className="text-muted-foreground">Calculated at checkout</span>
+                  <span className="text-muted-foreground">EGP 60</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm">Tax</span>
-                  <span className="text-muted-foreground">Calculated at checkout</span>
+                  <span className="text-muted-foreground">EGP 0</span>
                 </div>
-                <Separator />
-                <div className="flex justify-between">
-                  <span className="font-medium">Total</span>
-                  <span className="font-bold">{formatPrice(subtotal)}</span>
-                </div>
+              <Separator />
+              <div className="flex justify-between">
+                <span className="font-medium">Total</span>
+                <span className="font-bold">{formatPrice(total)}</span>
+              </div>
               </div>
             </CardContent>
           </Card>

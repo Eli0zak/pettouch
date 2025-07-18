@@ -148,6 +148,7 @@ const Subscription = () => {
             'Detailed NFC scan statistics',
             'Access to e-commerce store'
           ],
+          petLimit: 1,
           price: 'Free',
           isCurrent: currentPlan === 'free'
         };
@@ -163,6 +164,7 @@ const Subscription = () => {
             'Customize NFC tags (shapes & designs)',
             '5% discount on store purchases'
           ],
+          petLimit: 5,
           pricing: {
             '3months': 'EGP 250 (~EGP 83/month)',
             '6months': 'EGP 450 (EGP 75/month, 10% off)',
@@ -183,6 +185,7 @@ const Subscription = () => {
             '10% discount on store purchases',
             'Priority support (24-hour response)'
           ],
+          petLimit: Infinity,
           pricing: {
             '3months': 'EGP 500 (~EGP 167/month)',
             '6months': 'EGP 900 (EGP 150/month, 10% off)',
@@ -196,6 +199,7 @@ const Subscription = () => {
           name: 'Unknown Plan',
           icon: <Bell className="h-5 w-5" />,
           features: [],
+          petLimit: 0,
           price: '-',
           isCurrent: false
         };
@@ -258,6 +262,9 @@ const Subscription = () => {
                         </li>
                       ))}
                     </ul>
+                    <div className="mt-2 text-sm font-semibold">
+                      Pets Allowed: {planDetails.petLimit === Infinity ? 'Unlimited' : planDetails.petLimit}
+                    </div>
                   </CardContent>
                   <CardFooter>
                     {!planDetails.isCurrent && plan !== 'free' && (

@@ -1,25 +1,64 @@
 import React, { useState, useEffect } from 'react';
-import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Search, MapPin, Calendar, Mail, Phone } from 'lucide-react';
-import { LostFoundPost } from '@/types';
+import { Search, Heart } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { LostFoundInteractionModal } from '@/components/LostFoundInteractionModal';
+import { ReportFormModal } from '@/components/ReportFormModal';
+import CommunityReportCard from '@/components/CommunityReportCard';
+import ReunionCard from '@/components/ReunionCard';
+import { Database } from '@/integrations/supabase/types';
 
-const CommunityReports = () => {
+type LostFoundPost = Database['public']['Tables']['lost_found_posts']['Row'] & {
+  government?: string;
+  area?: string;
+  pet_type: 'dog' | 'cat' | 'bird' | 'other';
+  status: 'open' | 'resolved' | 'closed';
+  type?: 'lost' | 'found';
+};
+
+const governments = [
+  'Alexandria', 'Aswan', 'Asyut', 'Beheira', 'Beni Suef', 'Cairo', 'Dakahlia',
+  'Damietta', 'Faiyum', 'Gharbia', 'Giza', 'Ismailia', 'Kafr El Sheikh',
+  'Luxor', 'Matrouh', 'Minya', 'Monufia', 'New Valley', 'North Sinai',
+  'Port Said', 'Qalyubia', 'Qena', 'Red Sea', 'Sharqia', 'Sohag',
+  'South Sinai', 'Suez'
+];
+
+const governmentAreas: Record<string, string[]> = {
+  cairo: ['Sahel', 'Shubra', 'Heliopolis', 'Maadi', 'Nasr City'],
+  alexandria: ['Smouha', 'Gleem', 'Stanley', 'Roushdy'],
+  giza: ['Dokki', 'Mohandessin', 'Haram', '6th October'],
+};
+
+const CommunityReports: React.FC = () => {
   const { t } = useLanguage();
   const { toast } = useToast();
   const navigate = useNavigate();
+
   const [posts, setPosts] = useState<LostFoundPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterType, setFilterType] = useState('all');
-  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterType, setFilterType] = useState<'all' | 'dog' | 'cat' | 'bird' | 'other'>('all');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'open' | 'resolved' | 'closed'>('all');
+  const [filterLocation, setFilterLocation] = useState('');
+  const [filterGovernment, setFilterGovernment] = useState('all');
+  const [filterArea, setFilterArea] = useState('');
+
+  useEffect(() => {
+    setFilterArea('');
+  }, [filterGovernment]);
+
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [reportType, setReportType] = useState<'lost' | 'found'>('lost');
+  const [interactionModalOpen, setInteractionModalOpen] = useState(false);
+  const [interactionPostId, setInteractionPostId] = useState<string | null>(null);
+  const [interactionPostTitle, setInteractionPostTitle] = useState('');
+  const [interactionType, setInteractionType] = useState<'found' | 'know'>('found');
 
   useEffect(() => {
     fetchPosts();
@@ -32,14 +71,15 @@ const CommunityReports = () => {
         .from('lost_found_posts')
         .select('*')
         .order('created_at', { ascending: false });
-      
+
       if (error) throw error;
-      
+
       const typedPosts = data?.map(post => ({
         ...post,
-        status: post.status as 'open' | 'resolved' | 'closed'
+        status: post.status as 'open' | 'resolved' | 'closed',
+        type: (post as any).type as 'lost' | 'found'
       })) as LostFoundPost[];
-      
+
       setPosts(typedPosts || []);
     } catch (error) {
       console.error('Error fetching lost and found posts:', error);
@@ -53,71 +93,201 @@ const CommunityReports = () => {
     }
   };
 
-  const formatDate = (dateString: string | null | undefined) => {
-    if (!dateString) return 'Unknown date';
-    try {
-      return format(new Date(dateString), 'PPP');
-    } catch (error) {
-      return 'Unknown date';
-    }
+  const openInteractionModal = (postId: string, postTitle: string, type: 'found' | 'know') => {
+    setInteractionPostId(postId);
+    setInteractionPostTitle(postTitle);
+    setInteractionType(type);
+    setInteractionModalOpen(true);
   };
 
-  const getStatusBadgeClass = (status: 'open' | 'resolved' | 'closed') => {
-    switch (status) {
-      case 'open':
-        return 'bg-amber-100 text-amber-800 border-amber-200';
-      case 'resolved':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'closed':
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-      default:
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-    }
+  const closeInteractionModal = () => {
+    setInteractionModalOpen(false);
+    setInteractionPostId(null);
+    setInteractionPostTitle('');
   };
 
   const filteredPosts = posts.filter(post => {
-    const searchMatch = 
+    const searchMatch =
       post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       post.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (post.pet_name && post.pet_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (post.pet_breed && post.pet_breed.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (post.last_seen_location && post.last_seen_location.toLowerCase().includes(searchTerm.toLowerCase()));
-    
+
     const typeMatch = filterType === 'all' || post.pet_type === filterType;
     const statusMatch = filterStatus === 'all' || post.status === filterStatus;
-    
-    return searchMatch && typeMatch && statusMatch;
+    const locationMatch = !filterLocation ||
+      (post.last_seen_location &&
+        post.last_seen_location.toLowerCase().includes(filterLocation.toLowerCase()));
+
+    const governmentMatch = filterGovernment === 'all' ||
+      (post.government?.toLowerCase() === filterGovernment.toLowerCase());
+
+    const areaMatch = !filterArea ||
+      (post.area?.toLowerCase().includes(filterArea.toLowerCase()));
+
+    return searchMatch && typeMatch && statusMatch && locationMatch && governmentMatch && areaMatch;
   });
 
   return (
     <div className="container mx-auto py-12 px-6">
       <div className="text-center mb-16">
-        <h1 className="text-4xl font-bold mb-4">
-          {t('community.title')}
+        <h1 className="text-4xl font-bold mb-2">
+          {t('communityActionHub')}
         </h1>
-        <p className="text-muted-foreground max-w-2xl mx-auto mb-8">
-          {t('community.description')}
+        <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto text-center">
+          {t('communityDescription')}
         </p>
-        
-        <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
-          <Button className="bg-pet-primary hover:bg-pet-secondary text-white">
-            {t('community.reportLost')}
+
+        <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
+          <Button
+            size="lg"
+            className="bg-amber-600 hover:bg-amber-700 text-white min-w-[200px]"
+            onClick={() => {
+              setReportType('lost');
+              setReportModalOpen(true);
+            }}
+          >
+            <div className="flex items-center gap-2">
+              <Search className="h-5 w-5" />
+              <span>{t('reportLostPet')}</span>
+            </div>
           </Button>
-          <Button variant="outline" className="border-pet-primary text-pet-primary hover:bg-pet-accent1/20">
-            {t('community.reportFound')}
+          <Button
+            size="lg"
+            variant="outline"
+            className="border-emerald-600 text-emerald-600 hover:bg-emerald-50 min-w-[200px]"
+            onClick={() => {
+              setReportType('found');
+              setReportModalOpen(true);
+            }}
+          >
+            <div className="flex items-center gap-2">
+              <Heart className="h-5 w-5" />
+              <span>{t('foundPet')}</span>
+            </div>
           </Button>
         </div>
-        
-        <div className="max-w-xl mx-auto">
+
+        {/* Happy Reunions Section */}
+        <div className="mb-16">
+          <h2 className="text-3xl font-bold mb-6 text-center">{t('happyReunions')}</h2>
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+            <div className="flex gap-4 overflow-x-auto pb-4 px-4 -mx-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+              {posts
+                .filter(post => post.status === 'resolved')
+                .slice(0, 6)
+                .map(post => (
+                  <ReunionCard key={post.id} pet={post} />
+                ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Active Alerts Section */}
+        <div className="mb-8 text-center">
+          <h2 className="text-2xl font-bold mb-2">{t('activeAlerts')}</h2>
+          <p className="text-muted-foreground mb-8">{t('alertsDescription')}</p>
+        </div>
+
+        <div className="max-w-5xl mx-auto space-y-4">
+          {/* Search Bar - Full width on all screens */}
+          <div className="relative">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input
-              type="text"
-              placeholder={t('community.searchPlaceholder')}
+            placeholder={t('searchPlaceholderFull')}
+              className="pl-10 w-full"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
             />
+          </div>
+
+          {/* Filters Grid - Responsive grid layout */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            {/* Pet Type Filter */}
+            <div className="w-full">
+              <Select
+                value={filterType}
+                onValueChange={(value: 'all' | 'dog' | 'cat' | 'bird' | 'other') => setFilterType(value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={t('petType')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('AllTypes')}</SelectItem>
+                  <SelectItem value="dog">{t('dog')}</SelectItem>
+                  <SelectItem value="cat">{t('cat')}</SelectItem>
+                  <SelectItem value="bird">{t('bird')}</SelectItem>
+                  <SelectItem value="other">{t('other')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Status Filter */}
+            <div className="w-full">
+              <Select
+                value={filterStatus}
+                onValueChange={(value: 'all' | 'open' | 'resolved' | 'closed') => setFilterStatus(value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={t('status')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('AllStatus')}</SelectItem>
+                  <SelectItem value="open">{t('Open')}</SelectItem>
+                  <SelectItem value="resolved">{t('Resolved')}</SelectItem>
+                  <SelectItem value="closed">{t('Closed')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Location Filter */}
+            <div className="w-full">
+              <Input
+                placeholder={t('locationFilter')}
+                value={filterLocation}
+                onChange={(e) => setFilterLocation(e.target.value)}
+                className="w-full"
+              />
+            </div>
+
+            {/* Government Filter */}
+            <div className="w-full">
+              <Select value={filterGovernment} onValueChange={setFilterGovernment}>
+                <SelectTrigger>
+                  <SelectValue placeholder={t('government')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('Governments')}</SelectItem>
+                  {governments.map((gov) => (
+                    <SelectItem key={gov.toLowerCase()} value={gov.toLowerCase()}>
+                      {gov}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Area Filter */}
+            <div className="w-full">
+              <Select
+                value={filterArea}
+                onValueChange={(value) => setFilterArea(value)}
+                disabled={filterGovernment === 'all'}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={t('areaFilter')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('Areas')}</SelectItem>
+                  {(governmentAreas[filterGovernment] || []).map((area) => (
+                    <SelectItem key={area.toLowerCase()} value={area.toLowerCase()}>
+                      {area}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
       </div>
@@ -129,79 +299,33 @@ const CommunityReports = () => {
           </div>
         ) : filteredPosts.length > 0 ? (
           filteredPosts.map(post => (
-            <Card key={post.id} className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <div className="aspect-video rounded-md bg-muted mb-4">
-                  <img
-                    src={post.image_url || `https://source.unsplash.com/featured/400x300?pet&${post.id}`}
-                    alt={post.title}
-                    className="w-full h-full object-cover rounded-md"
-                  />
-                </div>
-                <div className="flex justify-between items-start">
-                  <CardTitle className="line-clamp-2">{post.title}</CardTitle>
-                  <div className={`px-2 py-1 text-xs rounded-full border ${getStatusBadgeClass(post.status)}`}>
-                    {post.status.charAt(0).toUpperCase() + post.status.slice(1)}
-                  </div>
-                </div>
-                <CardDescription>
-                  {post.pet_type && post.pet_breed 
-                    ? `${post.pet_type.charAt(0).toUpperCase() + post.pet_type.slice(1)} - ${post.pet_breed}`
-                    : post.pet_type?.charAt(0).toUpperCase() + post.pet_type?.slice(1)}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm line-clamp-3 mb-4">{post.description}</p>
-                
-                <div className="flex flex-col space-y-2 text-sm text-muted-foreground">
-                  {post.last_seen_location && (
-                    <div className="flex items-center">
-                      <MapPin className="h-3 w-3 mr-2" />
-                      <span>{post.last_seen_location}</span>
-                    </div>
-                  )}
-                  {post.last_seen_date && (
-                    <div className="flex items-center">
-                      <Calendar className="h-3 w-3 mr-2" />
-                      <span>{formatDate(post.last_seen_date)}</span>
-                    </div>
-                  )}
-                  <div className="flex items-center">
-                    <Calendar className="h-3 w-3 mr-2" />
-                    <span>Posted: {formatDate(post.created_at)}</span>
-                  </div>
-                  {(post.contact_phone || post.contact_email) && (
-                    <div className="border-t pt-2 mt-2">
-                      <p className="font-medium mb-1">Contact Information:</p>
-                      {post.contact_phone && (
-                        <div className="flex items-center">
-                          <Phone className="h-3 w-3 mr-2" />
-                          <span>{post.contact_phone}</span>
-                        </div>
-                      )}
-                      {post.contact_email && (
-                        <div className="flex items-center">
-                          <Mail className="h-3 w-3 mr-2" />
-                          <span>{post.contact_email}</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Button variant="outline" className="w-full">
-                  {t('community.viewDetails')}
-                </Button>
-              </CardFooter>
-            </Card>
-          )) 
+            <CommunityReportCard
+              key={post.id}
+              post={post}
+              onOpenInteractionModal={openInteractionModal}
+            />
+          ))
         ) : (
-          <Card className="p-8 text-center">
-            <p>{t('community.noReportsFound')}</p>
-          </Card>
+          <div className="col-span-full p-8 text-center text-muted-foreground">
+            {t('noReportsFound')}
+          </div>
         )}
       </div>
+
+      <LostFoundInteractionModal
+        isOpen={interactionModalOpen}
+        onClose={closeInteractionModal}
+        postId={interactionPostId ?? ''}
+        postTitle={interactionPostTitle ?? ''}
+        interactionType={interactionType ?? 'found'}
+        onSuccess={fetchPosts}
+      />
+
+      <ReportFormModal
+        isOpen={reportModalOpen}
+        onClose={() => setReportModalOpen(false)}
+        onSuccess={fetchPosts}
+      />
     </div>
   );
 };

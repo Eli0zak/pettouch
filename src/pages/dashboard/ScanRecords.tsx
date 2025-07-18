@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Activity, MapPin, Calendar, Clock, User, Filter } from 'lucide-react';
-import { Badge } from "@/components/ui/badge";
+import { Activity, Filter } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Select, 
@@ -15,6 +14,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { supabase } from '@/integrations/supabase/client';
 import { useTranslation } from 'react-i18next';
 import { logger } from '@/utils/logger';
+import ScanRecordCard from '@/components/ui/ScanRecordCard';
 
 // Model for scan record display
 interface ScanRecord {
@@ -25,6 +25,7 @@ interface ScanRecord {
   tagId: string;
   timestamp: Date;
   location: string;
+  coordinates?: { lat: number; lng: number } | null;
   scannerInfo?: string;
 }
 
@@ -171,33 +172,40 @@ const ScanRecords = () => {
             deviceParts.push(scan.device_info.device);
           }
           
-          deviceInfo = deviceParts.join(' / ') || t('tagPage.unknown');
+          deviceInfo = deviceParts.join(' / ') || t('community.unknown');
         } else {
-          deviceInfo = t('tagPage.unknown');
+          deviceInfo = t('community.unknown');
         }
         
         // Extract location in a more detailed way
         let locationInfo = '';
+        let coordinates = null;
+        
         if (scan.location) {
           if (scan.location.address) {
             locationInfo = scan.location.address;
+            coordinates = scan.location.coordinates || null;
+          } else if (scan.location.city && scan.location.country) {
+            locationInfo = `${scan.location.city}, ${scan.location.country}`;
           } else if (scan.location.coordinates) {
             locationInfo = `${scan.location.coordinates.lat.toFixed(4)}, ${scan.location.coordinates.lng.toFixed(4)}`;
+            coordinates = scan.location.coordinates;
           } else {
-            locationInfo = t('tagPage.unknown');
+            locationInfo = t('community.unknown');
           }
         } else {
-          locationInfo = t('tagPage.unknown');
+          locationInfo = t('community.unknown');
         }
         
         return {
           id: scan.id,
-          petName: pet?.name || t('tagPage.unknown'),
+          petName: pet?.name || t('community.unknown'),
           petId: scan.pet_id || '',
           petImage: pet?.profile_image_url || null,
           tagId: scan.tag_id,
           timestamp: new Date(scan.created_at),
           location: locationInfo,
+          coordinates,
           scannerInfo: deviceInfo
         };
       });
@@ -282,134 +290,115 @@ const ScanRecords = () => {
     
     if (loading) {
       return (
-        <div className="text-center py-8 text-gray-500">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-gray-900 mx-auto mb-4"></div>
-          <p>{t('common.loading')}</p>
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-500">{t('common.loading')}</p>
         </div>
       );
     }
     
     if (filteredRecords.length === 0) {
       return (
-        <div className="text-center py-8 text-gray-500">
-          <Activity className="mx-auto h-10 w-10 mb-4 text-gray-400" />
-          <p>{t('common.noData')}</p>
-          <p className="mt-2">{t('dashboard.startTracking')}</p>
+        <div className="text-center py-12">
+          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Activity className="h-8 w-8 text-gray-400" />
+          </div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            {t('scanHistory.empty.title')}
+          </h3>
+          <p className="text-gray-500 max-w-sm mx-auto">
+            {t('scanHistory.empty.description')}
+          </p>
         </div>
       );
     }
     
     return (
-      <div className="space-y-4">
+      <div className="space-y-3">
         {filteredRecords.map((record) => (
-          <div 
-            key={record.id} 
-            className="border rounded-lg p-4 flex flex-col md:flex-row md:items-center justify-between hover:bg-gray-50 cursor-pointer transition-colors"
-            onClick={() => handleScanClick(record.id)}
-          >
-            <div>
-              <h3 className="font-medium">{record.petName}</h3>
-              <div className="flex items-center text-sm text-gray-500 mt-1">
-                <Calendar className="h-4 w-4 ml-1" />
-                <span>{formatDate(record.timestamp)}</span>
-                <Clock className="h-4 w-4 ml-1 mr-3" />
-                <span>{formatTime(record.timestamp)}</span>
-              </div>
-              <div className="flex items-center text-sm text-gray-500 mt-1">
-                <MapPin className="h-4 w-4 ml-1" />
-                <span>{record.location}</span>
-              </div>
-              {record.scannerInfo && (
-                <div className="flex items-center text-sm text-gray-500 mt-1">
-                  <User className="h-4 w-4 ml-1" />
-                  <span>{record.scannerInfo}</span>
-                </div>
-              )}
-            </div>
-            <Badge className="mt-2 md:mt-0">{t('tagPage.nfcTag')}</Badge>
-          </div>
+          <ScanRecordCard
+            key={record.id}
+            id={record.id}
+            petName={record.petName}
+            petImage={record.petImage}
+            timestamp={record.timestamp}
+            location={record.location}
+            coordinates={record.coordinates}
+            onClick={handleScanClick}
+          />
         ))}
       </div>
     );
   };
 
   return (
-    <div className="container mx-auto py-8 px-4">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">{t('dashboard.scanRecords')}</h1>
-        <p className="text-gray-600">{t('features.tracking.description')}</p>
-      </div>
-      
+    <div className="container mx-auto py-4 px-4 max-w-4xl">
+      {/* Header */}
       <div className="mb-6">
-        <div className="flex items-center gap-2">
-          <Filter className="h-5 w-5 text-gray-500" />
-          <span className="text-sm font-medium">{t('store.filters')}:</span>
-        </div>
-        <Select value={selectedPetId} onValueChange={setSelectedPetId}>
-          <SelectTrigger className="w-full md:w-64 mt-2">
-            <SelectValue placeholder={t('nfcTags.linkDialog.choosePet')} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{t('community.filters.all')}</SelectItem>
-            {availablePets.map(pet => (
-              <SelectItem key={pet.id} value={pet.id}>
-                {pet.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
+          {t('scanHistory.title')}
+        </h1>
+        <p className="text-gray-600 text-sm sm:text-base">
+          {t('scanHistory.description')}
+        </p>
       </div>
       
-      <Tabs defaultValue="all" className="mb-8">
-        <TabsList className="mb-4">
-          <TabsTrigger value="all">{t('store.allOrders')}</TabsTrigger>
-          <TabsTrigger value="today">{t('today')}</TabsTrigger>
-          <TabsTrigger value="week">{t('thisWeek')}</TabsTrigger>
-          <TabsTrigger value="month">{t('thisMonth')}</TabsTrigger>
+      {/* Pet Filter */}
+      {availablePets.length > 0 && (
+        <div className="mb-6">
+          <div className="flex items-center gap-2 mb-3">
+            <Filter className="h-4 w-4 text-gray-500" />
+            <span className="text-sm font-medium text-gray-700">
+              {t('store.filters')}:
+            </span>
+          </div>
+          <Select value={selectedPetId} onValueChange={setSelectedPetId}>
+            <SelectTrigger className="w-full sm:w-64">
+              <SelectValue placeholder={t('nfcTags.linkDialog.choosePet')} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t('community.filters.all')}</SelectItem>
+              {availablePets.map(pet => (
+                <SelectItem key={pet.id} value={pet.id}>
+                  {pet.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+      
+      {/* Time Period Tabs */}
+      <Tabs defaultValue="all" className="w-full">
+        <TabsList className="grid w-full grid-cols-4 mb-6">
+          <TabsTrigger value="all" className="text-xs sm:text-sm">
+            {t('scanHistory.filters.all')}
+          </TabsTrigger>
+          <TabsTrigger value="today" className="text-xs sm:text-sm">
+            {t('scanHistory.filters.today')}
+          </TabsTrigger>
+          <TabsTrigger value="week" className="text-xs sm:text-sm">
+            {t('scanHistory.filters.week')}
+          </TabsTrigger>
+          <TabsTrigger value="month" className="text-xs sm:text-sm">
+            {t('scanHistory.filters.month')}
+          </TabsTrigger>
         </TabsList>
         
-        <TabsContent value="all">
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('allScanRecords')}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {renderScanRecords(scanRecords)}
-            </CardContent>
-          </Card>
+        <TabsContent value="all" className="mt-0">
+          {renderScanRecords(scanRecords)}
         </TabsContent>
         
-        <TabsContent value="today">
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('todayScanRecords')}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {renderScanRecords(filterRecordsByPeriod('today'))}
-            </CardContent>
-          </Card>
+        <TabsContent value="today" className="mt-0">
+          {renderScanRecords(filterRecordsByPeriod('today'))}
         </TabsContent>
         
-        <TabsContent value="week">
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('weeklyScanRecords')}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {renderScanRecords(filterRecordsByPeriod('week'))}
-            </CardContent>
-          </Card>
+        <TabsContent value="week" className="mt-0">
+          {renderScanRecords(filterRecordsByPeriod('week'))}
         </TabsContent>
         
-        <TabsContent value="month">
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('monthlyScanRecords')}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {renderScanRecords(filterRecordsByPeriod('month'))}
-            </CardContent>
-          </Card>
+        <TabsContent value="month" className="mt-0">
+          {renderScanRecords(filterRecordsByPeriod('month'))}
         </TabsContent>
       </Tabs>
     </div>

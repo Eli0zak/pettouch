@@ -29,6 +29,7 @@ import {
   ArrowUpRightSquare,
   Package,
   Store,
+  BookOpen,
   X
 } from 'lucide-react';
 import Logo from '@/components/Logo';
@@ -203,6 +204,12 @@ const AdminLayout = () => {
       path: '/admin/upgrade-requests',
       icon: <ArrowUpRightSquare size={20} />,
       badge: pendingUpgrades > 0 ? pendingUpgrades : null
+    },
+    {
+      name: 'Article Management',
+      path: '/admin/articles',
+      icon: <BookOpen size={20} />,
+      badge: null
     }
   ];
 

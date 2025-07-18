@@ -1,82 +1,102 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { ArrowUp } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent } from '@/components/ui/card';
-import { Bell, Calendar, File, Image, MapPin, MessageSquare, Settings } from 'lucide-react';
 
-const FeaturesPage = () => {
-  const featuresList = [
-    {
-      icon: <File className="h-10 w-10 text-pet-primary" />,
-      title: "Comprehensive Pet Profiles",
-      description: "Create detailed digital profiles for each of your pets, including photos, breed information, medical history, behavioral traits, dietary needs, and emergency contacts."
-    },
-    {
-      icon: <Image className="h-10 w-10 text-pet-primary" />,
-      title: "QR Code Integration",
-      description: "Generate unique QR codes for your pets that link to their digital profiles. When scanned, these codes provide instant access to critical information for whoever finds your pet."
-    },
-    {
-      icon: <MapPin className="h-10 w-10 text-pet-primary" />,
-      title: "Scan History Tracking",
-      description: "Monitor when and where your pet's QR code has been scanned, providing an additional layer of security and peace of mind when your pet is with others."
-    },
-    {
-      icon: <Bell className="h-10 w-10 text-pet-primary" />,
-      title: "Vaccination & Medication Reminders",
-      description: "Set up customizable reminders for vaccinations, medications, grooming appointments, and other recurring pet care tasks to ensure you never miss an important date."
-    },
-    {
-      icon: <Calendar className="h-10 w-10 text-pet-primary" />,
-      title: "Health & Activity Logs",
-      description: "Keep detailed records of vet visits, medications, exercise routines, dietary changes, and behavioral observations to monitor your pet's wellbeing over time."
-    },
-    {
-      icon: <MessageSquare className="h-10 w-10 text-pet-primary" />,
-      title: "Lost & Found Community",
-      description: "Connect with a network of pet owners in your area to help locate missing pets. Post alerts, share sightings, and coordinate search efforts through our community platform."
-    },
-    {
-      icon: <Settings className="h-10 w-10 text-pet-primary" />,
-      title: "Pet Care Tips & Resources",
-      description: "Access a library of expert-vetted articles, videos, and resources on pet health, training, nutrition, and behavior to help you provide the best care for your furry friends."
-    }
-  ];
+interface Feature {
+  title: string;
+  description: string;
+  imageSrc: string;
+  altText: string;
+}
+
+const features: Feature[] = [
+  {
+    title: 'Digital Pet Profiles',
+    description: 'Create and manage detailed profiles for your pets, including photos, medical history, and more.',
+    imageSrc: '/assets/features/digital-pet-profiles.png',
+    altText: 'Digital Pet Profiles mockup'
+  },
+  {
+    title: 'Health & Reminders',
+    description: 'Keep track of your pet’s health with reminders for vaccinations, medications, and appointments.',
+    imageSrc: '/assets/features/health-reminders.png',
+    altText: 'Health & Reminders mockup'
+  },
+  {
+    title: 'Pet Community Hub',
+    description: 'Connect with other pet owners, share tips, and find local pet-friendly events.',
+    imageSrc: '/assets/features/pet-community-hub.png',
+    altText: 'Pet Community Hub mockup'
+  },
+  {
+    title: 'Location Tracking',
+    description: 'Real-time GPS tracking to keep your pet safe and easily locate them if they wander off.',
+    imageSrc: 'src/assets/cbf7dcd757ab68db.png',
+    altText: 'Location Tracking mockup'
+  }
+];
+
+const FeaturesPage: React.FC = () => {
+  const { t } = useLanguage();
+  const [showScroll, setShowScroll] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.pageYOffset > 300) {
+        setShowScroll(true);
+      } else {
+        setShowScroll(false);
+      }
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   return (
-    <div className="container mx-auto py-12 px-6">
-      <div className="text-center mb-16">
-        <h1 className="text-4xl font-bold mb-4">Our <span className="text-pet-primary">Features</span></h1>
-        <p className="text-muted-foreground max-w-2xl mx-auto">
-          Discover all the ways PetTouch can help you manage your pet's health, safety, and wellbeing
-        </p>
-      </div>
-      
-      <div className="grid grid-cols-1 gap-12 mb-16">
-        {featuresList.map((feature, index) => (
-          <Card key={index} className="hover:shadow-lg transition-all border-pet-accent1">
-            <CardContent className="p-8">
-              <div className="flex flex-col md:flex-row gap-6">
-                <div className="flex items-start justify-center md:justify-start">
-                  <div className="p-4 rounded-full bg-pet-accent1">
-                    {feature.icon}
-                  </div>
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold mb-3 text-pet-secondary">{feature.title}</h3>
-                  <p className="text-muted-foreground">{feature.description}</p>
-                </div>
-              </div>
+    <div className="min-h-screen bg-background text-foreground font-sans">
+      <div className="container mx-auto py-12 px-6 space-y-16">
+        {/* Main Header Section */}
+        <header className="text-center">
+          <h1 className="text-5xl font-bold mb-4 text-pet-primary">Features</h1>
+          <p className="text-lg font-normal max-w-3xl mx-auto text-muted-foreground">
+            Discover the key features that make PetTouch your perfect pet companion.
+          </p>
+        </header>
+
+        {/* Features Display Section */}
+        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 max-w-7xl mx-auto">
+          {features.map((feature, index) => (
+            <Card key={index} className="flex flex-col items-center text-center hover-scale">
+            <CardContent className="p-6 flex flex-col items-center text-center">
+              <h3 className="text-xl font-semibold mb-3 text-pet-primary">{feature.title}</h3>
+              <p className="text-base font-normal text-muted-foreground mb-6">{feature.description}</p>
+              <img
+                src={feature.imageSrc}
+                alt={feature.altText}
+                className="w-full h-auto rounded-md"
+                loading="lazy"
+              />
             </CardContent>
-          </Card>
-        ))}
+            </Card>
+          ))}
+        </section>
       </div>
-      
-      <div className="bg-pet-accent1/30 p-8 rounded-xl text-center">
-        <h2 className="text-2xl font-bold mb-4 text-pet-secondary">Coming Soon</h2>
-        <p className="text-muted-foreground max-w-2xl mx-auto mb-4">
-          We're constantly working to improve PetTouch with new features and enhancements. 
-          Stay tuned for upcoming additions including mobile apps, advanced analytics, and more!
-        </p>
-      </div>
+
+      {/* Scroll-to-Top Button */}
+      {showScroll && (
+        <button
+          onClick={scrollToTop}
+          aria-label="Scroll to top"
+          className="fixed bottom-6 right-6 w-12 h-12 rounded-full bg-pet-primary flex items-center justify-center shadow-lg hover:bg-pet-primary-dark transition-colors dark:bg-pet-primary dark:hover:bg-pet-primary-dark"
+        >
+          <ArrowUp className="text-white" size={24} />
+        </button>
+      )}
     </div>
   );
 };

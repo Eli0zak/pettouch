@@ -38,7 +38,7 @@ import { logger } from '@/utils/logger';
 
 const Store = () => {
 	const { t } = useLanguage();
-	const { addToCart, setIsCartOpen } = useCart();
+	const { addToCart, setIsCartOpen, totalItems } = useCart();
 	const { toast } = useToast();
 	const navigate = useNavigate();
 	
@@ -51,7 +51,7 @@ const Store = () => {
 	// State for filtering and pagination
 	const [selectedCategory, setSelectedCategory] = useState<string>('all');
 	const [searchQuery, setSearchQuery] = useState('');
-	const [priceRange, setPriceRange] = useState<[number, number]>([0, 200]);
+	const [priceRange, setPriceRange] = useState<[number, number]>([0, 5000]);
 	const [sortBy, setSortBy] = useState<string>('featured');
 	const [inStockOnly, setInStockOnly] = useState(false);
 	const [currentPage, setCurrentPage] = useState(1);
@@ -402,8 +402,8 @@ const Store = () => {
 												}}
 											/>
 											<div className="flex justify-between mt-2 text-sm">
-												<span>${priceRange[0]}</span>
-												<span>${priceRange[1]}</span>
+												<span>EGP {priceRange[0]}</span>
+												<span>EGP {priceRange[1]}</span>
 											</div>
 										</div>
 									</div>
@@ -434,8 +434,10 @@ const Store = () => {
 						variant="outline"
 						size="icon"
 						onClick={() => setIsCartOpen(true)}
+						className="relative"
 					>
 						<ShoppingBag className="h-4 w-4" />
+						<span className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center text-xs bg-primary-500 text-white rounded-full">{totalItems > 0 ? totalItems : null}</span>
 					</Button>
 				</div>
 			</div>
@@ -496,8 +498,8 @@ const Store = () => {
 										}}
 									/>
 									<div className="flex justify-between mt-2 text-sm">
-										<span>${priceRange[0]}</span>
-										<span>${priceRange[1]}</span>
+										<span>EGP {priceRange[0]}</span>
+										<span>EGP {priceRange[1]}</span>
 									</div>
 								</div>
 							</div>
@@ -610,11 +612,11 @@ const Store = () => {
 												<div>
 													{product.sale_price ? (
 														<div className="flex items-center gap-2">
-															<span className="text-lg font-bold">${product.sale_price.toFixed(2)}</span>
-															<span className="text-sm text-muted-foreground line-through">${product.price.toFixed(2)}</span>
+															<span className="text-lg font-bold">EGP {product.sale_price.toFixed(2)}</span>
+															<span className="text-sm text-muted-foreground line-through">EGP{product.price.toFixed(2)}</span>
 														</div>
 													) : (
-														<span className="text-lg font-bold">${product.price.toFixed(2)}</span>
+														<span className="text-lg font-bold">EGP {product.price.toFixed(2)}</span>
 													)}
 												</div>
 												
