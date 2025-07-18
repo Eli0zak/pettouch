@@ -24,6 +24,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useCart } from '@/contexts/CartContext';
 
 const Navbar = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -36,6 +37,8 @@ const Navbar = () => {
   const { language, setLanguage, t, isRTL } = useLanguage();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+
+  const { totalItems } = useCart();
 
   // Minimum touch target size for buttons and links
   const minTouchSize = "min-h-[44px] min-w-[44px]";
@@ -268,21 +271,7 @@ const Navbar = () => {
                 </motion.span>
               </Link>
               
-              <Link to="/features">
-                <motion.span 
-                  className={cn(
-                    "px-3 py-2 rounded-md text-sm font-medium transition-colors " + minTouchSize,
-                    location.pathname === '/features' 
-                      ? "text-primary-700 dark:text-primary-400" 
-                      : "text-gray-600 dark:text-gray-300"
-                  )}
-                  variants={navLinkVariants}
-                  initial="initial"
-                  whileHover="hover"
-                >
-                  {t('nav.features')}
-                </motion.span>
-              </Link>
+              
               
               <Link to="/community-reports">
                 <motion.span 
@@ -368,7 +357,7 @@ const Navbar = () => {
                 className={"relative " + minTouchSize}
               >
                 <ShoppingCart className="h-5 w-5" />
-                <span className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center text-xs bg-primary-500 text-white rounded-full">3</span>
+                <span className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center text-xs bg-primary-500 text-white rounded-full">{totalItems > 0 ? totalItems : null}</span>
               </Button>
                 </Link>
                 
@@ -386,7 +375,10 @@ const Navbar = () => {
                   </Button>
                 </Link>
                 <Link to="/auth">
-                  <Button className="bg-primary-500 hover:bg-primary-600 text-white">
+                  <Button 
+                    variant="ghost"
+                    className="text-gray-700 dark:text-gray-200"
+                  >
                     {t('nav.signup')}
                   </Button>
                 </Link>
@@ -404,10 +396,12 @@ const Navbar = () => {
                   className="relative"
                   onClick={() => navigate('/checkout')}
                 >
-                  <ShoppingCart className="h-5 w-5" />
-                  <span className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center text-xs bg-primary-500 text-white rounded-full">3</span>
-                </Button>
+                <ShoppingCart className="h-5 w-5" />
+                <span className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center text-xs bg-primary-500 text-white rounded-full">{totalItems > 0 ? totalItems : null}</span>
+              </Button>
               )}
+              
+              
               
               <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
                 <SheetTrigger asChild>
@@ -469,13 +463,7 @@ const Navbar = () => {
                       >
                         {t('nav.about')}
                       </Link>
-                      <Link 
-                        to="/features" 
-                        className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
-                        onClick={() => setMobileMenuOpen(false)}
-                      >
-                        {t('nav.features')}
-                      </Link>
+                      
                       <Link 
                         to="/community-reports" 
                         className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
@@ -531,7 +519,7 @@ const Navbar = () => {
                                 </Button>
                               </Link>
                               <Link to="/auth" className="w-full" onClick={() => setMobileMenuOpen(false)}>
-                                <Button className="w-full bg-primary-500 hover:bg-primary-600 text-white">
+                                <Button variant="ghost" className="w-full">
                                   {t('nav.signup')}
                                 </Button>
                               </Link>

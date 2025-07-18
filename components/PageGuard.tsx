@@ -151,14 +151,6 @@ const PageGuard: React.FC<PageGuardProps> = ({
   const location = useLocation();
   const { t } = useLanguage();
   
-  if (loading) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center">
-        <div className="h-10 w-10 animate-spin rounded-full border-t-2 border-primary"></div>
-      </div>
-    );
-  }
-  
   useEffect(() => {
     if (requireAuth && !isAuthenticated && !loading) {
       toast({
@@ -169,10 +161,6 @@ const PageGuard: React.FC<PageGuardProps> = ({
     }
   }, [requireAuth, isAuthenticated, loading, toast, t]);
 
-  if (requireAuth && !isAuthenticated) {
-    return <Navigate to="/auth" state={{ from: location.pathname }} replace />;
-  }
-  
   useEffect(() => {
     if (requireAdmin && isAdmin === false && !loading) {
       logger.warn('Access denied: Admin privileges required', { 
@@ -188,6 +176,18 @@ const PageGuard: React.FC<PageGuardProps> = ({
     }
   }, [requireAdmin, isAdmin, loading, toast, t, logger, location.pathname, isAuthenticated]);
 
+  if (loading) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <div className="h-10 w-10 animate-spin rounded-full border-t-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (requireAuth && !isAuthenticated) {
+    return <Navigate to="/auth" state={{ from: location.pathname }} replace />;
+  }
+  
   if (requireAdmin) {
     if (isAdmin === null) {
       logger.info('Admin status is loading');

@@ -1,943 +1,882 @@
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "./dialog";
-import { Button } from "./button";
-import { Input } from "./input";
-import { Label } from "./label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./select";
-import { Textarea } from "./textarea";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "./use-toast";
-import { uploadPetImage } from '@/lib/upload-helper';
-import { ImagePlus } from 'lucide-react';
-import { Separator } from './separator';
-import { Badge } from './badge';
+import { TagInput } from './tag-input';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from './dialog';
+import { Button } from './button';
+import { Input } from './input';
+import { Label } from './label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from './select';
+import { Textarea } from './textarea';
+import { useToast } from './use-toast';
+import { motion, AnimatePresence, Variants } from 'framer-motion';
+import {
+  Loader2, 
+  PawPrint, 
+  Ruler, 
+  Heart, 
+  Users, 
+  Camera, 
+  Check, 
+  X, 
+  Dog, 
+  Cat, 
+  Bird,
+  Plus 
+} from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { supabase } from '@/integrations/supabase/client';
+import { cn } from '@/lib/utils';
 
-// Validation functions
-const validateEmail = (email: string): boolean => {
-  if (!email) return true; // Allow empty email
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
+// Improved style constants with consistent spacing and typography
+const styles = {
+  dialog: {
+    content: "max-w-[800px] w-[95vw] max-h-[85vh] overflow-y-auto",
+    inner: "p-4 md:p-8 space-y-6 md:space-y-8",
+    header: "flex flex-col md:flex-row md:items-center md:gap-6",
+  },
+  typography: {
+    title: "text-2xl md:text-3xl font-bold tracking-tight text-foreground",
+    description: "text-sm md:text-base text-muted-foreground mt-3 leading-relaxed",
+    sectionTitle: "text-xl font-semibold mb-6 text-foreground",
+    label: "text-sm font-medium leading-none text-foreground mb-2 block",
+  },
+  layout: {
+    section: "space-y-8",
+    formGroup: "space-y-8",
+    header: "mb-8",
+    fieldContainer: "space-y-3",
+  },
+  stepper: {
+    wrapper: "mb-6 md:mb-8 px-2 md:px-4",
+    container: "flex justify-between items-start relative gap-1 md:gap-2",
+    step: "flex flex-col items-center relative z-10 flex-1 px-1 md:px-2",
+    icon: "w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center transition-all duration-200 mb-2 shadow-sm",
+    iconActive: "bg-primary text-primary-foreground shadow-lg scale-110",
+    iconCompleted: "bg-green-500 text-white",
+    iconPending: "bg-muted text-muted-foreground",
+    label: "text-[10px] md:text-xs font-medium text-center max-w-[60px] md:max-w-[80px] leading-tight mt-1",
+    labelActive: "text-primary font-semibold",
+    labelCompleted: "text-green-600",
+    labelPending: "text-muted-foreground",
+    connector: "absolute top-5 left-0 right-0 h-[2px] -z-10 transition-colors duration-200",
+    connectorActive: "bg-green-500",
+    connectorInactive: "bg-muted",
+    progress: "text-sm font-medium text-center mt-6 text-muted-foreground",
+  },
+  uploader: {
+    container: "flex flex-col items-center justify-center w-full mb-6",
+    dropzone: "w-32 h-32 rounded-full border-2 border-dashed border-muted-foreground/25 hover:border-primary/50 transition-all duration-200 cursor-pointer overflow-hidden relative group",
+    preview: "w-full h-full object-cover rounded-full",
+    placeholder: "flex flex-col items-center justify-center h-full text-muted-foreground group-hover:text-primary transition-colors",
+    removeButton: "absolute -top-1 -right-1 p-1 bg-destructive text-destructive-foreground rounded-full hover:bg-destructive/90 transition-colors shadow-sm",
+  },
+  chips: {
+    container: "flex flex-wrap gap-2 mt-2",
+    chip: "inline-flex items-center justify-center rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50",
+    chipSelected: "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm",
+    chipUnselected: "bg-muted/30 text-foreground hover:bg-muted/50",
+    icon: "mr-2 h-4 w-4",
+  },
+  footer: {
+    container: "flex flex-col-reverse md:flex-row justify-between items-center w-full gap-4 pt-4 mt-6 border-t",
+    buttonGroup: "flex items-center gap-3 w-full md:w-auto",
+    skipLink: "text-sm text-muted-foreground hover:text-foreground transition-colors w-full md:w-auto text-center md:text-left md:mr-auto",
+  },
+} as const;
+
+// Step icons mapping
+const StepIcons = {
+  1: PawPrint,
+  2: Ruler,
+  3: Heart,
+  4: Users,
+} as const;
+
+// Animation variants
+const pageVariants: Variants = {
+  enter: {
+    x: '100%',
+    opacity: 0
+  },
+  center: {
+    x: 0,
+    opacity: 1
+  },
+  exit: {
+    x: '-100%',
+    opacity: 0
+  }
 };
 
-const validatePhone = (phone: string): boolean => {
-  if (!phone) return true; // Allow empty phone
-  const phoneRegex = /^[+]?[(]?[0-9]{3}[)]?[-\s.]?[0-9]{3}[-\s.]?[0-9]{4,6}$/;
-  return phoneRegex.test(phone);
-};
+// Component Props and Types
+// Types
+type PetType = 'dog' | 'cat' | 'bird' | 'other';
+type Gender = 'male' | 'female' | 'other';
 
-const validateWeight = (weight: number): boolean => {
-  if (!weight) return true; // Allow zero weight
-  return weight > 0 && weight < 1000; // Reasonable weight range
-};
+interface AddPetDialogProps {
+  onSuccess?: () => void;
+}
 
-export function AddPetDialog({ onSuccess }: { onSuccess?: () => void }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
+interface PetData {
+  profile_image: File | null;
+  name: string;
+  type: string;
+  breed: string;
+  gender: string;
+  birthday: string;
+  color: string;
+  weight_kg: number | '';
+  microchip_id: string;
+  blood_type: string;
+  medical_conditions: string;
+  allergies: string;
+  medications: string;
+  vaccinations: Array<{ name: string; date: string; next_due: string }>;
+  veterinarian_name: string;
+  veterinarian_phone: string;
+  veterinarian_clinic: string;
+  emergency_contact_name: string;
+  emergency_contact_relationship: string;
+  emergency_contact_phone: string;
+}
+
+export function AddPetDialog({ onSuccess }: AddPetDialogProps) {
+  const [open, setOpen] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1);
   const { toast } = useToast();
-  const [selectedImage, setSelectedImage] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({});
+  const { t } = useLanguage();
+  const [loading, setLoading] = useState(false);
 
-  const [petData, setPetData] = useState({
-    name: "",
-    type: "",
-    breed: "",
-    gender: "",
-    birthday: "",
-    color: "",
-    weight_kg: 0,
-    microchip_id: "",
-    notes: "",
-    medical_info: {
-      blood_type: "",
-      conditions: [] as string[],
-      allergies: [] as string[],
-      medications: [] as string[],
-      vaccinations: [] as { name: string; date: string; next_due: string }[],
-      last_checkup: "",
-      next_checkup: "",
-      medical_notes: "",
-      veterinarian: {
-        name: "",
-        phone: "",
-        email: "",
-        clinic: "",
-        address: "",
-        specialization: "",
-        license_number: ""
-      }
-    },
-    emergency_contact: {
-      name: "",
-      phone: "",
-      email: "",
-      relationship: "",
-      address: "",
-    }
+  const steps = [
+    { id: 1, title: t('dashboard.pets.add.steps.startBasics') },
+    { id: 2, title: t('dashboard.pets.add.steps.tellUsMore') },
+    { id: 3, title: t('dashboard.pets.add.steps.healthMedical') },
+    { id: 4, title: t('dashboard.pets.add.steps.careTeam') },
+  ];
+
+  const [petData, setPetData] = useState<PetData>({
+    profile_image: null,
+    name: '',
+    type: '',
+    breed: '',
+    gender: '',
+    birthday: '',
+    color: '',
+    weight_kg: '',
+    microchip_id: '',
+    blood_type: '',
+    medical_conditions: '',
+    allergies: '',
+    medications: '',
+    vaccinations: [],
+    veterinarian_name: '',
+    veterinarian_phone: '',
+    veterinarian_clinic: '',
+    emergency_contact_name: '',
+    emergency_contact_relationship: '',
+    emergency_contact_phone: '',
   });
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
-        toast({
-          title: "Error",
-          description: "Image size should be less than 5MB",
-          variant: "destructive",
-        });
-        return;
-      }
-      setSelectedImage(file);
-      setImagePreview(URL.createObjectURL(file));
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setPetData({ ...petData, profile_image: e.target.files[0] });
     }
   };
 
-  const validateForm = (): boolean => {
-    const errors: {[key: string]: string} = {};
-    
-    // Required fields
-    if (!petData.name.trim()) {
-      errors.name = "Pet name is required";
+  const handleNext = async () => {
+    // Validate current step
+    if (currentStep === 1) {
+      if (!petData.name.trim() || !petData.type) {
+        toast({
+          title: t('error'),
+          description: t('dashboard.pets.add.errors.requiredFields'),
+          variant: 'destructive',
+        });
+        return;
+      }
     }
-    
-    if (!petData.type) {
-      errors.type = "Pet type is required";
+    if (currentStep < steps.length) {
+      setCurrentStep(currentStep + 1);
     }
-    
-    // Email validations
-    if (petData.medical_info.veterinarian.email && !validateEmail(petData.medical_info.veterinarian.email)) {
-      errors.vetEmail = "Please enter a valid email address";
+  };
+
+  const handleBack = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
     }
-    
-    if (petData.emergency_contact.email && !validateEmail(petData.emergency_contact.email)) {
-      errors.emergencyEmail = "Please enter a valid email address";
+  };
+
+  const handleSkip = () => {
+    if (currentStep < steps.length) {
+      setCurrentStep(currentStep + 1);
     }
-    
-    // Phone validations
-    if (petData.medical_info.veterinarian.phone && !validatePhone(petData.medical_info.veterinarian.phone)) {
-      errors.vetPhone = "Please enter a valid phone number";
-    }
-    
-    if (petData.emergency_contact.phone && !validatePhone(petData.emergency_contact.phone)) {
-      errors.emergencyPhone = "Please enter a valid phone number";
-    }
-    
-    // Weight validation
-    if (petData.weight_kg && !validateWeight(petData.weight_kg)) {
-      errors.weight = "Please enter a valid weight (0-1000 kg)";
-    }
-    
-    setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
+  };
+
+  const handleVaccinationChange = (
+    index: number,
+    field: keyof Pick<{ name: string; date: string; next_due: string }, 'name' | 'date' | 'next_due'>,
+    value: string
+  ) => {
+    const newVaccinations = [...petData.vaccinations];
+    newVaccinations[index] = { ...newVaccinations[index], [field]: value };
+    setPetData({ ...petData, vaccinations: newVaccinations });
+  };
+
+  const addVaccination = () => {
+    setPetData({
+      ...petData,
+      vaccinations: [...petData.vaccinations, { name: '', date: '', next_due: '' }],
+    });
+  };
+
+  const removeVaccination = (index: number) => {
+    const newVaccinations = petData.vaccinations.filter((_, i) => i !== index);
+    setPetData({ ...petData, vaccinations: newVaccinations });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!validateForm()) {
-      toast({
-        title: "Validation Error",
-        description: "Please correct the errors in the form",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setLoading(true);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        throw new Error("User not authenticated");
-      }
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) throw new Error('User not authenticated');
 
-      const formattedPetData = {
+      const petInsertData = {
         name: petData.name.trim(),
         type: petData.type.toLowerCase(),
         breed: petData.breed.trim() || null,
         gender: petData.gender || null,
         birthday: petData.birthday || null,
-        owner_id: user.id,
         color: petData.color || null,
-        weight_kg: petData.weight_kg || null,
+        weight_kg: petData.weight_kg === '' ? null : petData.weight_kg,
         microchip_id: petData.microchip_id || null,
-        notes: petData.notes || null,
+        owner_id: userData.user.id,
         medical_info: {
-          ...petData.medical_info,
-          conditions: petData.medical_info.conditions.filter(Boolean),
-          allergies: petData.medical_info.allergies.filter(Boolean),
-          medications: petData.medical_info.medications.filter(Boolean),
-          vaccinations: petData.medical_info.vaccinations.filter(v => v.name && v.date)
-        },
-        emergency_contact: {
-          ...petData.emergency_contact
+          blood_type: petData.blood_type || null,
+          conditions: petData.medical_conditions
+            ? petData.medical_conditions.split(',').map((s) => s.trim())
+            : [],
+          allergies: petData.allergies
+            ? petData.allergies.split(',').map((s) => s.trim())
+            : [],
+          medications: petData.medications
+            ? petData.medications.split(',').map((s) => s.trim())
+            : [],
+          vaccinations: petData.vaccinations.filter(
+            (v) => v.name.trim() !== '' || v.date.trim() !== '' || v.next_due.trim() !== ''
+          ),
         }
       };
 
-      const { data: newPet, error: insertError } = await supabase
-        .from("pets")
-        .insert(formattedPetData)
+      const { data: insertedPet, error: insertError } = await supabase
+        .from('pets')
+        .insert(petInsertData)
         .select()
         .single();
 
-      if (insertError) throw insertError;
+      if (insertError) {
+        throw insertError;
+      }
 
-      if (selectedImage && newPet) {
-        const publicUrl = await uploadPetImage(selectedImage, newPet.id);
-        
+      if (!insertedPet) {
+        throw new Error('Failed to insert pet data');
+      }
+
+      // Upload profile image if provided
+      let profile_image_url = null;
+      if (petData.profile_image) {
+        const fileExt = petData.profile_image.name.split('.').pop();
+        const fileName = `${insertedPet.id}.${fileExt}`;
+        const filePath = `pets/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('pet-images')
+          .upload(filePath, petData.profile_image, { upsert: true });
+
+        if (uploadError) throw uploadError;
+
+        const { data } = supabase.storage.from('pet-images').getPublicUrl(filePath);
+        profile_image_url = data.publicUrl;
+
+        // Update pet with profile image url
         const { error: updateError } = await supabase
-          .from("pets")
-          .update({ profile_image_url: publicUrl })
-          .eq('id', newPet.id);
-
+          .from('pets')
+          .update({ profile_image_url })
+          .eq('id', insertedPet.id);
+          
         if (updateError) throw updateError;
       }
 
       toast({
-        title: "Success",
-        description: "Pet added successfully!",
+        title: t('dashboard.pets.add.success.title'),
+        description: t('dashboard.pets.add.success.description', { name: insertedPet.name }),
       });
 
-      setIsOpen(false);
-      if (onSuccess) onSuccess();
+      setOpen(false);
+      setCurrentStep(1);
       setPetData({
-        name: "",
-        type: "",
-        breed: "",
-        gender: "",
-        birthday: "",
-        color: "",
-        weight_kg: 0,
-        microchip_id: "",
-        notes: "",
-        medical_info: {
-          blood_type: "",
-          conditions: [],
-          allergies: [],
-          medications: [],
-          vaccinations: [],
-          last_checkup: "",
-          next_checkup: "",
-          medical_notes: "",
-          veterinarian: {
-            name: "",
-            phone: "",
-            email: "",
-            clinic: "",
-            address: "",
-            specialization: "",
-            license_number: ""
-          }
-        },
-        emergency_contact: {
-          name: "",
-          phone: "",
-          email: "",
-          relationship: "",
-          address: "",
-        }
+        profile_image: null,
+        name: '',
+        type: '',
+        breed: '',
+        gender: '',
+        birthday: '',
+        color: '',
+        weight_kg: '',
+        microchip_id: '',
+        blood_type: '',
+        medical_conditions: '',
+        allergies: '',
+        medications: '',
+        vaccinations: [],
+        veterinarian_name: '',
+        veterinarian_phone: '',
+        veterinarian_clinic: '',
+        emergency_contact_name: '',
+        emergency_contact_relationship: '',
+        emergency_contact_phone: '',
       });
-      setSelectedImage(null);
-      setImagePreview(null);
-    } catch (error: any) {
+
+      if (onSuccess) {
+        onSuccess();
+      }
+    } catch (error) {
+      console.error('Error adding pet:', error);
       toast({
-        title: "Error",
-        description: error.message || "Failed to add pet",
-        variant: "destructive",
+        title: t('dashboard.pets.add.error.title'),
+        description: t('dashboard.pets.add.error.description'),
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleAddVaccination = () => {
-    setPetData(prev => ({
-      ...prev,
-      medical_info: {
-        ...prev.medical_info,
-        vaccinations: [
-          ...prev.medical_info.vaccinations,
-          { name: "", date: "", next_due: "" }
-        ]
-      }
-    }));
-  };
-
-  const handleRemoveVaccination = (index: number) => {
-    setPetData(prev => ({
-      ...prev,
-      medical_info: {
-        ...prev.medical_info,
-        vaccinations: prev.medical_info.vaccinations.filter((_, i) => i !== index)
-      }
-    }));
-  };
-
-  const handleArrayFieldChange = (field: 'conditions' | 'allergies' | 'medications', value: string) => {
-    if (!value.trim()) return;
-    setPetData(prev => ({
-      ...prev,
-      medical_info: {
-        ...prev.medical_info,
-        [field]: [...prev.medical_info[field], value.trim()]
-      }
-    }));
-  };
-
-  const handleRemoveArrayItem = (field: 'conditions' | 'allergies' | 'medications', index: number) => {
-    setPetData(prev => ({
-      ...prev,
-      medical_info: {
-        ...prev.medical_info,
-        [field]: prev.medical_info[field].filter((_, i) => i !== index)
-      }
-    }));
-  };
-
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button className="bg-pet-primary hover:bg-pet-secondary">+ Add New Pet</Button>
-      </DialogTrigger>
-      <DialogContent className="max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Add New Pet</DialogTitle>
-          <DialogDescription>Fill in your pet's details below.</DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit}>
-          <div className="space-y-6">
-            {/* Basic Information */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Basic Information</h3>
-              
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="pet-image">Pet Image</Label>
-                  <div className="mt-2 flex flex-col items-center gap-4">
-                    {imagePreview ? (
-                      <div className="relative w-full h-48">
-                        <img
-                          src={imagePreview}
-                          alt="Preview"
-                          className="w-full h-full object-cover rounded-lg"
-                        />
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          size="icon"
-                          className="absolute top-2 right-2 h-8 w-8"
-                          onClick={() => {
-                            setSelectedImage(null);
-                            setImagePreview(null);
-                          }}
+    <>
+      <Button 
+        onClick={() => setOpen(true)}
+        className="inline-flex items-center space-x-2"
+      >
+        <Plus className="w-4 h-4" />
+        <span>{t('dashboard.pets.addNewPet')}</span>
+      </Button>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className={cn(styles.dialog.content)}>
+          <div className={styles.dialog.inner}>
+            <DialogHeader className={styles.layout.header}>
+              <DialogTitle className={styles.typography.title}>
+                {t('dashboard.pets.add.title')}
+              </DialogTitle>
+              <DialogDescription className={styles.typography.description}>
+                {t('dashboard.pets.add.description')}
+              </DialogDescription>
+            </DialogHeader>
+
+            {/* Improved Stepper Progress Indicator */}
+            <div className={styles.stepper.wrapper}>
+              <div className={styles.stepper.container}>
+                {steps.map((step, index) => {
+                  const StepIcon = StepIcons[step.id as keyof typeof StepIcons];
+                  const isActive = currentStep === step.id;
+                  const isCompleted = currentStep > step.id;
+
+                  return (
+                    <React.Fragment key={step.id}>
+                      <div className={styles.stepper.step}>
+                        <div
+                          className={cn(
+                            styles.stepper.icon,
+                            isActive && styles.stepper.iconActive,
+                            isCompleted && styles.stepper.iconCompleted,
+                            !isActive && !isCompleted && styles.stepper.iconPending
+                          )}
                         >
-                          ×
-                        </Button>
+                          {isCompleted ? (
+                            <Check className="w-5 h-5" />
+                          ) : (
+                            <StepIcon className="w-5 h-5" />
+                          )}
+                        </div>
+                        <span className={cn(
+                          styles.stepper.label,
+                          isActive && styles.stepper.labelActive,
+                          isCompleted && styles.stepper.labelCompleted,
+                          !isActive && !isCompleted && styles.stepper.labelPending
+                        )}>
+                          {step.title}
+                        </span>
                       </div>
-                    ) : (
-                      <div className="w-full h-48 border-2 border-dashed rounded-lg flex flex-col items-center justify-center bg-muted/50 hover:bg-muted transition-colors">
-                        <label htmlFor="image-upload" className="cursor-pointer text-center p-4 w-full h-full flex flex-col items-center justify-center">
-                          <ImagePlus className="w-8 h-8 mb-2 text-muted-foreground" />
-                          <span className="text-sm text-muted-foreground">Click to upload image</span>
-                          <span className="text-xs text-muted-foreground mt-1">(Max size: 5MB)</span>
-                        </label>
-                      </div>
-                    )}
-                    <input
-                      id="image-upload"
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleImageChange}
-                    />
-                  </div>
-                </div>
+                      {index < steps.length - 1 && (
+                        <div 
+                          className={cn(
+                            styles.stepper.connector,
+                            (currentStep > step.id) ? styles.stepper.connectorActive : styles.stepper.connectorInactive
+                          )}
+                        />
+                      )}
+                    </React.Fragment>
+                  );
+                })}
+              </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="name">Pet Name*</Label>
-                    <Input
-                      id="name"
-                      value={petData.name}
-                      onChange={(e) => setPetData({ ...petData, name: e.target.value })}
-                      required
-                      placeholder="Enter pet name"
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="type">Type*</Label>
-                    <Select
-                      value={petData.type}
-                      onValueChange={(value) => setPetData({ ...petData, type: value })}
-                      required
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="dog">Dog</SelectItem>
-                        <SelectItem value="cat">Cat</SelectItem>
-                        <SelectItem value="bird">Bird</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="breed">Breed</Label>
-                    <Input
-                      id="breed"
-                      value={petData.breed}
-                      onChange={(e) => setPetData({ ...petData, breed: e.target.value })}
-                      placeholder="Enter breed"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="birthday">Birthday</Label>
-                    <Input
-                      id="birthday"
-                      type="date"
-                      value={petData.birthday}
-                      onChange={(e) => setPetData({ ...petData, birthday: e.target.value })}
-                      max={new Date().toISOString().split('T')[0]}
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="gender">Gender</Label>
-                    <Select
-                      value={petData.gender}
-                      onValueChange={(value) => setPetData({ ...petData, gender: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select gender" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="male">Male</SelectItem>
-                        <SelectItem value="female">Female</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="color">Color</Label>
-                    <Input
-                      id="color"
-                      value={petData.color}
-                      onChange={(e) => setPetData({ ...petData, color: e.target.value })}
-                      placeholder="Enter pet color"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="weight">Weight (kg)</Label>
-                    <Input
-                      id="weight"
-                      type="number"
-                      value={petData.weight_kg}
-                      onChange={(e) => setPetData({ ...petData, weight_kg: parseFloat(e.target.value) })}
-                      placeholder="Enter pet weight"
-                      step="0.1"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="microchip">Microchip ID</Label>
-                    <Input
-                      id="microchip"
-                      value={petData.microchip_id}
-                      onChange={(e) => setPetData({ ...petData, microchip_id: e.target.value })}
-                      placeholder="Enter microchip ID"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="notes">Notes</Label>
-                  <Textarea
-                    id="notes"
-                    value={petData.notes}
-                    onChange={(e) => setPetData({ ...petData, notes: e.target.value })}
-                    placeholder="Enter additional notes"
-                  />
-                </div>
+              <div className="text-center mt-6">
+                <p className="text-sm font-medium text-foreground">
+                  {steps[currentStep - 1].title}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Step {currentStep} of {steps.length}
+                </p>
               </div>
             </div>
 
-            <Separator />
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentStep}
+                variants={pageVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{ type: "tween", ease: "easeInOut", duration: 0.3 }}
+                className={styles.layout.section}
+              >
+                <form onSubmit={handleSubmit} className="space-y-0">
+                  {/* Step 1: Basic Information */}
+                  {currentStep === 1 && (
+                    <div className={styles.layout.formGroup}>
+                      {/* Improved Image Uploader */}
+                      <div className={styles.uploader.container}>
+                        <label className={styles.uploader.dropzone}>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleFileChange}
+                            className="sr-only"
+                          />
+                          {petData.profile_image ? (
+                            <>
+                              <img
+                                src={URL.createObjectURL(petData.profile_image)}
+                                alt="Pet preview"
+                                className={styles.uploader.preview}
+                              />
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setPetData({ ...petData, profile_image: null });
+                                }}
+                                className={styles.uploader.removeButton}
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </>
+                          ) : (
+                            <div className={styles.uploader.placeholder}>
+                              <Camera className="w-8 h-8 mb-2" />
+                              <span className="text-xs text-center font-medium">
+                                {t('dashboard.pets.add.uploadPhoto')}
+                              </span>
+                              <span className="text-xs text-center text-muted-foreground/70 mt-1">
+                                Click to browse
+                              </span>
+                            </div>
+                          )}
+                        </label>
+                        <p className="text-xs text-muted-foreground text-center mt-3">
+                          Optional: Add a profile photo for your pet
+                        </p>
+                      </div>
 
-            {/* Medical Information */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Medical Information</h3>
-              
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="blood_type">Blood Type</Label>
-                  <Input
-                    id="blood_type"
-                    value={petData.medical_info.blood_type}
-                    onChange={(e) => setPetData({
-                      ...petData,
-                      medical_info: { ...petData.medical_info, blood_type: e.target.value }
-                    })}
-                    placeholder="Enter blood type"
-                  />
-                </div>
+                      {/* Pet Name Field */}
+                      <div className={styles.layout.fieldContainer}>
+                        <Label className={styles.typography.label}>
+                          {t('dashboard.pets.add.name')} *
+                        </Label>
+                        <Input
+                          value={petData.name}
+                          onChange={(e) => setPetData({ ...petData, name: e.target.value })}
+                          placeholder={t('dashboard.pets.add.placeholders.name')}
+                          required
+                          className="text-base"
+                        />
+                      </div>
 
-                <div className="space-y-2">
-                  <Label>Medical Conditions</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {petData.medical_info.conditions.map((condition, index) => (
-                      <Badge key={index} variant="secondary" className="gap-2">
-                        {condition}
-                        <button
+                      {/* Pet Type Selection */}
+                      <div className={styles.layout.fieldContainer}>
+                        <Label className={styles.typography.label}>
+                          {t('dashboard.pets.add.type')} *
+                        </Label>
+                        <div className={styles.chips.container}>
+                          {['dog', 'cat', 'bird', 'other'].map((type) => {
+                            const Icon = type === 'dog' ? Dog : type === 'cat' ? Cat : type === 'bird' ? Bird : PawPrint;
+                            return (
+                              <button
+                                key={type}
+                                type="button"
+                                onClick={() => setPetData({ ...petData, type })}
+                                className={cn(
+                                  styles.chips.chip,
+                                  petData.type === type ? styles.chips.chipSelected : styles.chips.chipUnselected
+                                )}
+                              >
+                                <Icon className={styles.chips.icon} />
+                                {t(`dashboard.pets.add.types.${type}`)}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Step 2: Key Characteristics */}
+                  {currentStep === 2 && (
+                    <div className={styles.layout.formGroup}>
+                      {/* Breed Field */}
+                      <div className={styles.layout.fieldContainer}>
+                        <Label className={styles.typography.label}>
+                          {t('dashboard.pets.add.breed')}
+                        </Label>
+                        <Input
+                          value={petData.breed}
+                          onChange={(e) => setPetData({ ...petData, breed: e.target.value })}
+                          placeholder={t('dashboard.pets.add.placeholders.breed')}
+                          className="text-base"
+                        />
+                      </div>
+
+                      {/* Gender Selection */}
+                      <div className={styles.layout.fieldContainer}>
+                        <Label className={styles.typography.label}>
+                          {t('dashboard.pets.add.gender')}
+                        </Label>
+                        <div className={styles.chips.container}>
+                          {['male', 'female'].map((gender) => (
+                            <button
+                              key={gender}
+                              type="button"
+                              onClick={() => setPetData({ ...petData, gender })}
+                              className={cn(
+                                styles.chips.chip,
+                                petData.gender === gender ? styles.chips.chipSelected : styles.chips.chipUnselected
+                              )}
+                            >
+                              {t(`dashboard.pets.add.genders.${gender}`)}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Birthday Field */}
+                      <div className={styles.layout.fieldContainer}>
+                        <Label className={styles.typography.label}>
+                          {t('dashboard.pets.add.birthday')}
+                        </Label>
+                        <Input
+                          type="date"
+                          value={petData.birthday}
+                          onChange={(e) => setPetData({ ...petData, birthday: e.target.value })}
+                          className="text-base"
+                        />
+                      </div>
+
+                      {/* Color Field */}
+                      <div className={styles.layout.fieldContainer}>
+                        <Label className={styles.typography.label}>
+                          {t('dashboard.pets.add.color')}
+                        </Label>
+                        <Input
+                          value={petData.color}
+                          onChange={(e) => setPetData({ ...petData, color: e.target.value })}
+                          placeholder={t('dashboard.pets.add.placeholders.color')}
+                          className="text-base"
+                        />
+                      </div>
+
+                      {/* Weight Field */}
+                      <div className={styles.layout.fieldContainer}>
+                        <Label className={styles.typography.label}>
+                          {t('dashboard.pets.add.weight')}
+                        </Label>
+                        <Input
+                          type="number"
+                          value={petData.weight_kg}
+                          onChange={(e) => setPetData({ ...petData, weight_kg: parseFloat(e.target.value) || '' })}
+                          placeholder={t('dashboard.pets.add.placeholders.weight')}
+                          className="text-base"
+                          min="0"
+                          step="0.1"
+                        />
+                      </div>
+
+                      {/* Microchip ID Field */}
+                      <div className={styles.layout.fieldContainer}>
+                        <Label className={styles.typography.label}>
+                          {t('dashboard.pets.add.microchipId')}
+                        </Label>
+                        <Input
+                          value={petData.microchip_id}
+                          onChange={(e) => setPetData({ ...petData, microchip_id: e.target.value })}
+                          placeholder={t('dashboard.pets.add.placeholders.microchipId')}
+                          className="text-base"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Step 3: Health Profile */}
+                  {currentStep === 3 && (
+                    <div className={styles.layout.formGroup}>
+                      {/* Blood Type Field */}
+                      <div className={styles.layout.fieldContainer}>
+                        <Label className={styles.typography.label}>
+                          {t('dashboard.pets.add.bloodType')}
+                        </Label>
+                        <Input
+                          value={petData.blood_type}
+                          onChange={(e) => setPetData({ ...petData, blood_type: e.target.value })}
+                          placeholder={t('dashboard.pets.add.placeholders.bloodType')}
+                          className="text-base"
+                        />
+                      </div>
+
+                      {/* Medical Conditions */}
+                      <div className={styles.layout.fieldContainer}>
+                        <Label className={styles.typography.label}>
+                          {t('dashboard.pets.add.medicalConditions')}
+                        </Label>
+                        <TagInput
+                          tags={petData.medical_conditions ? petData.medical_conditions.split(',').filter(Boolean) : []}
+                          onChange={(tags) => setPetData({ ...petData, medical_conditions: tags.join(',') })}
+                          placeholder={t('dashboard.pets.add.placeholders.medicalConditions')}
+                        />
+                      </div>
+
+                      {/* Allergies */}
+                      <div className={styles.layout.fieldContainer}>
+                        <Label className={styles.typography.label}>
+                          {t('dashboard.pets.add.allergies')}
+                        </Label>
+                        <TagInput
+                          tags={petData.allergies ? petData.allergies.split(',').filter(Boolean) : []}
+                          onChange={(tags) => setPetData({ ...petData, allergies: tags.join(',') })}
+                          placeholder={t('dashboard.pets.add.placeholders.allergies')}
+                        />
+                      </div>
+
+                      {/* Medications */}
+                      <div className={styles.layout.fieldContainer}>
+                        <Label className={styles.typography.label}>
+                          {t('dashboard.pets.add.medications')}
+                        </Label>
+                        <TagInput
+                          tags={petData.medications ? petData.medications.split(',').filter(Boolean) : []}
+                          onChange={(tags) => setPetData({ ...petData, medications: tags.join(',') })}
+                          placeholder={t('dashboard.pets.add.placeholders.medications')}
+                        />
+                      </div>
+
+                      {/* Vaccinations */}
+                      <div className={styles.layout.fieldContainer}>
+                        <Label className={styles.typography.label}>
+                          {t('dashboard.pets.add.vaccinations')}
+                        </Label>
+                        {petData.vaccinations.map((vaccination, index) => (
+                          <div key={index} className="flex flex-col md:flex-row gap-2 items-start mb-4 md:mb-2">
+                            <Input
+                              value={vaccination.name}
+                              onChange={(e) => handleVaccinationChange(index, 'name', e.target.value)}
+                              placeholder={t('dashboard.pets.add.placeholders.vaccinationName')}
+                              className="flex-1"
+                            />
+                            <Input
+                              type="date"
+                              value={vaccination.date}
+                              onChange={(e) => handleVaccinationChange(index, 'date', e.target.value)}
+                              className="w-full md:w-40"
+                            />
+                            <Input
+                              type="date"
+                              value={vaccination.next_due}
+                              onChange={(e) => handleVaccinationChange(index, 'next_due', e.target.value)}
+                              className="w-full md:w-40"
+                            />
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="icon"
+                              onClick={() => removeVaccination(index)}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                        <Button
                           type="button"
-                          onClick={() => handleRemoveArrayItem('conditions', index)}
-                          className="text-xs hover:text-destructive"
+                          variant="outline"
+                          onClick={addVaccination}
+                          className="w-full mt-2"
                         >
-                          ×
-                        </button>
-                      </Badge>
-                    ))}
-                  </div>
-                  <Input
-                    placeholder="Add condition and press Enter"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleArrayFieldChange('conditions', (e.target as HTMLInputElement).value);
-                        (e.target as HTMLInputElement).value = '';
-                      }
-                    }}
-                  />
-                </div>
+                          <Plus className="h-4 w-4 mr-2" />
+                          {t('dashboard.pets.add.addVaccination')}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
 
-                <div className="space-y-2">
-                  <Label>Allergies</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {petData.medical_info.allergies.map((allergy, index) => (
-                      <Badge key={index} variant="secondary" className="gap-2">
-                        {allergy}
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveArrayItem('allergies', index)}
-                          className="text-xs hover:text-destructive"
-                        >
-                          ×
-                        </button>
-                      </Badge>
-                    ))}
-                  </div>
-                  <Input
-                    placeholder="Add allergy and press Enter"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleArrayFieldChange('allergies', (e.target as HTMLInputElement).value);
-                        (e.target as HTMLInputElement).value = '';
-                      }
-                    }}
-                  />
-                </div>
+                  {/* Step 4: Care Team */}
+                  {currentStep === 4 && (
+                    <div className={styles.layout.formGroup}>
+                      {/* Veterinarian Information */}
+                      <div className="space-y-4">
+                        <h3 className={styles.typography.sectionTitle}>
+                          {t('dashboard.pets.add.veterinarianInfo')}
+                        </h3>
+                        <div className={styles.layout.fieldContainer}>
+                          <Label className={styles.typography.label}>
+                            {t('dashboard.pets.add.vetName')}
+                          </Label>
+                          <Input
+                            value={petData.veterinarian_name}
+                            onChange={(e) => setPetData({ ...petData, veterinarian_name: e.target.value })}
+                            placeholder={t('dashboard.pets.add.placeholders.vetName')}
+                            className="text-base"
+                          />
+                        </div>
+                        <div className={styles.layout.fieldContainer}>
+                          <Label className={styles.typography.label}>
+                            {t('dashboard.pets.add.vetPhone')}
+                          </Label>
+                          <Input
+                            value={petData.veterinarian_phone}
+                            onChange={(e) => setPetData({ ...petData, veterinarian_phone: e.target.value })}
+                            placeholder={t('dashboard.pets.add.placeholders.vetPhone')}
+                            className="text-base"
+                          />
+                        </div>
+                        <div className={styles.layout.fieldContainer}>
+                          <Label className={styles.typography.label}>
+                            {t('dashboard.pets.add.vetClinic')}
+                          </Label>
+                          <Input
+                            value={petData.veterinarian_clinic}
+                            onChange={(e) => setPetData({ ...petData, veterinarian_clinic: e.target.value })}
+                            placeholder={t('dashboard.pets.add.placeholders.vetClinic')}
+                            className="text-base"
+                          />
+                        </div>
+                      </div>
 
-                <div className="space-y-2">
-                  <Label>Current Medications</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {petData.medical_info.medications.map((medication, index) => (
-                      <Badge key={index} variant="secondary" className="gap-2">
-                        {medication}
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveArrayItem('medications', index)}
-                          className="text-xs hover:text-destructive"
-                        >
-                          ×
-                        </button>
-                      </Badge>
-                    ))}
-                  </div>
-                  <Input
-                    placeholder="Add medication and press Enter"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleArrayFieldChange('medications', (e.target as HTMLInputElement).value);
-                        (e.target as HTMLInputElement).value = '';
-                      }
-                    }}
-                  />
-                </div>
+                      {/* Emergency Contact Information */}
+                      <div className="space-y-4 mt-8">
+                        <h3 className={styles.typography.sectionTitle}>
+                          {t('dashboard.pets.add.emergencyContact')}
+                        </h3>
+                        <div className={styles.layout.fieldContainer}>
+                          <Label className={styles.typography.label}>
+                            {t('dashboard.pets.add.emergencyName')}
+                          </Label>
+                          <Input
+                            value={petData.emergency_contact_name}
+                            onChange={(e) => setPetData({ ...petData, emergency_contact_name: e.target.value })}
+                            placeholder={t('dashboard.pets.add.placeholders.emergencyName')}
+                            className="text-base"
+                          />
+                        </div>
+                        <div className={styles.layout.fieldContainer}>
+                          <Label className={styles.typography.label}>
+                            {t('dashboard.pets.add.emergencyRelationship')}
+                          </Label>
+                          <Input
+                            value={petData.emergency_contact_relationship}
+                            onChange={(e) => setPetData({ ...petData, emergency_contact_relationship: e.target.value })}
+                            placeholder={t('dashboard.pets.add.placeholders.emergencyRelationship')}
+                            className="text-base"
+                          />
+                        </div>
+                        <div className={styles.layout.fieldContainer}>
+                          <Label className={styles.typography.label}>
+                            {t('dashboard.pets.add.emergencyPhone')}
+                          </Label>
+                          <Input
+                            value={petData.emergency_contact_phone}
+                            onChange={(e) => setPetData({ ...petData, emergency_contact_phone: e.target.value })}
+                            placeholder={t('dashboard.pets.add.placeholders.emergencyPhone')}
+                            className="text-base"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <Label>Vaccinations</Label>
+                  {/* Footer with improved spacing and alignment */}
+                  <DialogFooter className={styles.footer.container}>
+                    {/* Skip button for optional steps */}
+                    {currentStep > 1 && currentStep < steps.length && (
+                      <button
+                        type="button"
+                        onClick={handleSkip}
+                        className={styles.footer.skipLink}
+                      >
+                        {t('dashboard.pets.add.skipForNow')}
+                      </button>
+                    )}
                     <Button
                       type="button"
                       variant="outline"
-                      size="sm"
-                      onClick={handleAddVaccination}
+                      onClick={() => {
+                        setOpen(false);
+                        setCurrentStep(1);
+                      }}
                     >
-                      Add Vaccination
+                      {t('dashboard.pets.add.cancel')}
                     </Button>
-                  </div>
-                  <div className="space-y-4">
-                    {petData.medical_info.vaccinations.map((vax, index) => (
-                      <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start p-4 border rounded-lg relative">
+
+                    <div className={styles.footer.buttonGroup}>
+                      {currentStep > 1 && (
                         <Button
                           type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-destructive text-white hover:bg-destructive/90"
-                          onClick={() => handleRemoveVaccination(index)}
+                          variant="outline"
+                          onClick={handleBack}
                         >
-                          ×
+                          {t('dashboard.pets.add.back')}
                         </Button>
-                        <div>
-                          <Label>Name</Label>
-                          <Input
-                            value={vax.name}
-                            onChange={(e) => {
-                              const newVaccinations = [...petData.medical_info.vaccinations];
-                              newVaccinations[index] = { ...vax, name: e.target.value };
-                              setPetData({
-                                ...petData,
-                                medical_info: {
-                                  ...petData.medical_info,
-                                  vaccinations: newVaccinations
-                                }
-                              });
-                            }}
-                            placeholder="Vaccination name"
-                          />
-                        </div>
-                        <div>
-                          <Label>Date</Label>
-                          <Input
-                            type="date"
-                            value={vax.date}
-                            max={new Date().toISOString().split('T')[0]}
-                            onChange={(e) => {
-                              const newVaccinations = [...petData.medical_info.vaccinations];
-                              newVaccinations[index] = { ...vax, date: e.target.value };
-                              setPetData({
-                                ...petData,
-                                medical_info: {
-                                  ...petData.medical_info,
-                                  vaccinations: newVaccinations
-                                }
-                              });
-                            }}
-                          />
-                        </div>
-                        <div>
-                          <Label>Next Due</Label>
-                          <Input
-                            type="date"
-                            value={vax.next_due}
-                            min={new Date().toISOString().split('T')[0]}
-                            onChange={(e) => {
-                              const newVaccinations = [...petData.medical_info.vaccinations];
-                              newVaccinations[index] = { ...vax, next_due: e.target.value };
-                              setPetData({
-                                ...petData,
-                                medical_info: {
-                                  ...petData.medical_info,
-                                  vaccinations: newVaccinations
-                                }
-                              });
-                            }}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                      )}
 
-                <div className="space-y-4">
-                  <Label>Veterinarian Information</Label>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="vet_name">Name</Label>
-                      <Input
-                        id="vet_name"
-                        value={petData.medical_info.veterinarian.name}
-                        onChange={(e) => setPetData({
-                          ...petData,
-                          medical_info: {
-                            ...petData.medical_info,
-                            veterinarian: {
-                              ...petData.medical_info.veterinarian,
-                              name: e.target.value
-                            }
-                          }
-                        })}
-                        placeholder="Veterinarian name"
-                      />
+                      {currentStep < steps.length ? (
+                        <Button type="button" onClick={handleNext}>
+                          {t('dashboard.pets.add.next')}
+                        </Button>
+                      ) : (
+                        <Button type="submit" disabled={loading}>
+                          {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                          {t('dashboard.pets.add.finishAddPet')}
+                        </Button>
+                      )}
                     </div>
-                    <div>
-                      <Label htmlFor="vet_phone">Phone</Label>
-                      <Input
-                        id="vet_phone"
-                        value={petData.medical_info.veterinarian.phone}
-                        onChange={(e) => setPetData({
-                          ...petData,
-                          medical_info: {
-                            ...petData.medical_info,
-                            veterinarian: {
-                              ...petData.medical_info.veterinarian,
-                              phone: e.target.value
-                            }
-                          }
-                        })}
-                        placeholder="Veterinarian phone"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="vet_email">Email</Label>
-                      <Input
-                        id="vet_email"
-                        type="email"
-                        value={petData.medical_info.veterinarian.email}
-                        onChange={(e) => setPetData({
-                          ...petData,
-                          medical_info: {
-                            ...petData.medical_info,
-                            veterinarian: {
-                              ...petData.medical_info.veterinarian,
-                              email: e.target.value
-                            }
-                          }
-                        })}
-                        placeholder="Veterinarian email"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="vet_clinic">Clinic</Label>
-                      <Input
-                        id="vet_clinic"
-                        value={petData.medical_info.veterinarian.clinic}
-                        onChange={(e) => setPetData({
-                          ...petData,
-                          medical_info: {
-                            ...petData.medical_info,
-                            veterinarian: {
-                              ...petData.medical_info.veterinarian,
-                              clinic: e.target.value
-                            }
-                          }
-                        })}
-                        placeholder="Clinic name"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="vet_specialization">Specialization</Label>
-                      <Input
-                        id="vet_specialization"
-                        value={petData.medical_info.veterinarian.specialization}
-                        onChange={(e) => setPetData({
-                          ...petData,
-                          medical_info: {
-                            ...petData.medical_info,
-                            veterinarian: {
-                              ...petData.medical_info.veterinarian,
-                              specialization: e.target.value
-                            }
-                          }
-                        })}
-                        placeholder="Specialization"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="vet_license_number">License Number</Label>
-                      <Input
-                        id="vet_license_number"
-                        value={petData.medical_info.veterinarian.license_number}
-                        onChange={(e) => setPetData({
-                          ...petData,
-                          medical_info: {
-                            ...petData.medical_info,
-                            veterinarian: {
-                              ...petData.medical_info.veterinarian,
-                              license_number: e.target.value
-                            }
-                          }
-                        })}
-                        placeholder="License Number"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <Label htmlFor="vet_address">Clinic Address</Label>
-                    <Textarea
-                      id="vet_address"
-                      value={petData.medical_info.veterinarian.address}
-                      onChange={(e) => setPetData({
-                        ...petData,
-                        medical_info: {
-                          ...petData.medical_info,
-                          veterinarian: {
-                            ...petData.medical_info.veterinarian,
-                            address: e.target.value
-                          }
-                        }
-                      })}
-                      placeholder="Clinic address"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="last_checkup">Last Checkup</Label>
-                  <Input
-                    id="last_checkup"
-                    type="date"
-                    value={petData.medical_info.last_checkup}
-                    onChange={(e) => setPetData({
-                      ...petData,
-                      medical_info: {
-                        ...petData.medical_info,
-                        last_checkup: e.target.value
-                      }
-                    })}
-                    max={new Date().toISOString().split('T')[0]}
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="next_checkup">Next Checkup</Label>
-                  <Input
-                    id="next_checkup"
-                    type="date"
-                    value={petData.medical_info.next_checkup}
-                    onChange={(e) => setPetData({
-                      ...petData,
-                      medical_info: {
-                        ...petData.medical_info,
-                        next_checkup: e.target.value
-                      }
-                    })}
-                    min={new Date().toISOString().split('T')[0]}
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="medical_notes">Medical Notes</Label>
-                  <Textarea
-                    id="medical_notes"
-                    value={petData.medical_info.medical_notes}
-                    onChange={(e) => setPetData({
-                      ...petData,
-                      medical_info: {
-                        ...petData.medical_info,
-                        medical_notes: e.target.value
-                      }
-                    })}
-                    placeholder="Enter medical notes"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <Separator />
-
-            {/* Emergency Contact */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Emergency Contact</h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="emergency_name">Name</Label>
-                  <Input
-                    id="emergency_name"
-                    value={petData.emergency_contact.name}
-                    onChange={(e) => setPetData({
-                      ...petData,
-                      emergency_contact: {
-                        ...petData.emergency_contact,
-                        name: e.target.value
-                      }
-                    })}
-                    placeholder="Contact name"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="emergency_relationship">Relationship</Label>
-                  <Input
-                    id="emergency_relationship"
-                    value={petData.emergency_contact.relationship}
-                    onChange={(e) => setPetData({
-                      ...petData,
-                      emergency_contact: {
-                        ...petData.emergency_contact,
-                        relationship: e.target.value
-                      }
-                    })}
-                    placeholder="e.g. Family member, Friend"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="emergency_phone">Phone</Label>
-                  <Input
-                    id="emergency_phone"
-                    value={petData.emergency_contact.phone}
-                    onChange={(e) => setPetData({
-                      ...petData,
-                      emergency_contact: {
-                        ...petData.emergency_contact,
-                        phone: e.target.value
-                      }
-                    })}
-                    placeholder="Contact phone"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="emergency_email">Email</Label>
-                  <Input
-                    id="emergency_email"
-                    type="email"
-                    value={petData.emergency_contact.email}
-                    onChange={(e) => setPetData({
-                      ...petData,
-                      emergency_contact: {
-                        ...petData.emergency_contact,
-                        email: e.target.value
-                      }
-                    })}
-                    placeholder="Contact email"
-                  />
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="emergency_address">Address</Label>
-                <Textarea
-                  id="emergency_address"
-                  value={petData.emergency_contact.address}
-                  onChange={(e) => setPetData({
-                    ...petData,
-                    emergency_contact: {
-                      ...petData.emergency_contact,
-                      address: e.target.value
-                    }
-                  })}
-                  placeholder="Contact address"
-                />
-              </div>
-            </div>
+                  </DialogFooter>
+                </form>
+              </motion.div>
+            </AnimatePresence>
           </div>
-
-          <DialogFooter className="mt-6">
-            <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={loading} className="bg-pet-primary hover:bg-pet-secondary">
-              {loading ? "Adding..." : "Add Pet"}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

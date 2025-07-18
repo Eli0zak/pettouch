@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Star, ShoppingCart, Heart, Share2, Sparkles, Check } from 'lucide-react';
@@ -43,6 +44,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
   className = '',
 }) => {
   const { isDark } = useTheme();
+  const { t } = useLanguage();
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [showRipple, setShowRipple] = useState(false);
@@ -326,7 +328,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
           {!inStock && (
             <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-30">
               <div className="bg-white/10 backdrop-blur-md px-6 py-3 rounded-full">
-                <span className="text-white font-bold text-lg">Out of Stock</span>
+                <span className="text-white font-bold text-lg">{t('productCard.outOfStock')}</span>
               </div>
             </div>
           )}
@@ -423,7 +425,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
                     transition={{ duration: 0.2 }}
                   >
                     <Check className="h-4 w-4 mr-2" />
-                    Added to Cart
+                    {t('productCard.addedToCart')}
                   </motion.div>
                 ) : (
                   <motion.div
@@ -435,7 +437,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
                     transition={{ duration: 0.2 }}
                   >
                     <ShoppingCart className="h-4 w-4 mr-2" />
-                    {inStock ? 'Add to Cart' : 'Out of Stock'}
+                    {inStock ? t('productCard.addToCart') : t('productCard.outOfStock')}
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -457,4 +459,4 @@ const ProductCard: React.FC<ProductCardProps> = ({
   );
 };
 
-export default ProductCard; 
+export default ProductCard;

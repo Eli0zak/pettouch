@@ -104,16 +104,7 @@ export const MobileNavBar: React.FC = () => {
               >
                 {t('nav.about')}
               </Button>
-              <Button 
-                variant="ghost"
-                className="justify-start"
-                onClick={() => {
-                  setIsMenuOpen(false);
-                  navigate('/features');
-                }}
-              >
-                {t('nav.features')}
-              </Button>
+          
               <Button 
                 variant="ghost"
                 className="justify-start"

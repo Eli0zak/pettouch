@@ -12,7 +12,7 @@ interface LogoProps {
   heroSize?: boolean;
 }
 
-const Logo = ({ size = 72, className, showText = true, useSvg = true, heroSize = false, asLink = true }: LogoProps & { asLink?: boolean }) => {
+const Logo = ({ size = 54, className, showText = true, useSvg = true, heroSize = false, asLink = true }: LogoProps & { asLink?: boolean }) => {
   const { t, isRTL } = useLanguage();
   
   const finalSize = heroSize ? 120 : size;

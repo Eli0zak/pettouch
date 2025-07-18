@@ -180,92 +180,58 @@ const Hero = () => {
               {t('home.hero.badge')}
             </motion.span>
             
-            <motion.h1 
-              className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 tracking-tight"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-            >
-              <span className="bg-gradient-to-r from-[#9b87f5] to-[#7E69AB] bg-clip-text text-transparent pb-1 block">
-                {t('pettouch')}
-              </span> 
-              <motion.span 
-                className="text-foreground mt-2 block"
+              <motion.h1 
+                className="text-4xl md:text-6xl lg:text-7xl font-semibold mb-6 tracking-tight font-ibm-plex-sans"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.4 }}
+                transition={{ duration: 0.5, delay: 0.3 }}
               >
-                {t('home.hero.subtitle')}
-              </motion.span>
-            </motion.h1>
-            
-            <motion.p 
-              className="text-lg md:text-xl text-muted-foreground mb-8 max-w-lg leading-relaxed"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.5 }}
-            >
-              {t('home.hero.description')}
-            </motion.p>
-            
-            <motion.div 
-              className="flex flex-col sm:flex-row gap-4"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.6 }}
-            >
-              <Link to="/get-started">
-                <Button 
-                  className="relative overflow-hidden bg-[#9b87f5] hover:bg-[#7E69AB] text-white px-8 py-6 text-lg group"
-                  size="lg"
-                >
-                  <span className="relative z-10 flex items-center gap-2">
-                    {t('home.hero.getStarted')}
-                    <motion.span
-                      initial={{ x: -5, opacity: 0.5 }}
-                      animate={{ x: 0, opacity: 1 }}
-                      transition={{
-                        repeat: Infinity,
-                        repeatType: "mirror",
-                        duration: 0.8,
-                      }}
-                    >
-                      <ArrowRight className="h-5 w-5" />
-                    </motion.span>
-                  </span>
-                  
-                  {/* Button hover effect */}
-                  <motion.div
-                    className="absolute inset-0 bg-gradient-to-r from-[#9b87f5] to-[#7E69AB] opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                    style={{ zIndex: 0 }}
-                  />
-                </Button>
-              </Link>
+                {t('home.hero.title')}
+              </motion.h1>
               
-              <Link to="/learn-more">
-                <Button 
-                  variant="outline" 
-                  className="border-primary-200 dark:border-primary-800 text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 px-8 py-6 text-lg group"
-                  size="lg"
-                >
-                  <span className="flex items-center gap-2">
-                    {t('home.hero.learnMore')}
-                    <motion.span
-                      animate={{
-                        y: [0, 3, 0],
-                      }}
-                      transition={{
-                        duration: 1.5,
-                        repeat: Infinity,
-                        repeatType: "reverse",
-                      }}
-                    >
-                      <ArrowDown className="h-5 w-5" />
-                    </motion.span>
-                  </span>
-                </Button>
-              </Link>
-            </motion.div>
+              <motion.p 
+                className="text-lg md:text-xl text-[#2D2D2D] dark:text-[#E5E5E5] mb-8 max-w-lg leading-relaxed font-ibm-plex-sans"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.5 }}
+              >
+                {t('home.hero.description')}
+              </motion.p>
+              
+              <motion.div 
+                className="flex flex-col sm:flex-row gap-4"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.6 }}
+              >
+                <Link to="/get-started">
+                  <Button 
+                    className="relative overflow-hidden bg-[#FF9900] hover:bg-[#cc7a00] text-white rounded-lg px-8 py-6 text-lg font-semibold font-ibm-plex-sans"
+                    size="lg"
+                  >
+                    <span className="relative z-10 flex items-center gap-2">
+                      {t('home.hero.cta')}
+                      <motion.span
+                        initial={{ x: -5, opacity: 0.5 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        transition={{
+                          repeat: Infinity,
+                          repeatType: "mirror",
+                          duration: 0.8,
+                        }}
+                      >
+                        <ArrowRight className="h-5 w-5" />
+                      </motion.span>
+                    </span>
+                    
+                    {/* Button hover effect */}
+                    <motion.div
+                      className="absolute inset-0 bg-gradient-to-r from-[#FF9900] to-[#cc7a00] opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-lg"
+                      style={{ zIndex: 0 }}
+                    />
+                  </Button>
+                </Link>
+              </motion.div>
           </motion.div>
           
           <motion.div 
@@ -294,32 +260,12 @@ const Hero = () => {
                 
                 <img 
                   src={mainImage}
-                  alt="Happy pet with owner" 
+                alt="A confident pet parent enjoying peace of mind with their beloved pet" 
                   className="w-full h-full rounded-lg object-cover"
                 />
               </motion.div>
               
-              {/* Floating small image with claymorphism effect */}
-              <motion.div 
-                className={cn(
-                  "absolute -bottom-10 -left-10 rounded-xl overflow-hidden w-32 h-32 bg-white dark:bg-gray-800 p-2 shadow-xl",
-                  isDark ? "shadow-clay-dark" : "shadow-clay-light"
-                )}
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5, delay: 0.8 }}
-                whileHover={{ 
-                  scale: 1.05,
-                  rotate: -3,
-                  transition: { type: "spring", stiffness: 300, damping: 20 }
-                }}
-              >
-                <img 
-                  src={catImage}
-                  alt="Cute kitten" 
-                  className="w-full h-full rounded-lg object-cover"
-                />
-              </motion.div>
+      
               
               {/* Neo-brutalism decorative element */}
               <motion.div 
